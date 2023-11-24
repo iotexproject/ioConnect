@@ -6,7 +6,7 @@ The IoTeX DeviceConnect SDK (referred to as SDK) is a software development toolk
 
 #### **Design Methodology and Architecture**
 
-![SDK_Design_Overall](doc/image/SDK_Design_Overall.png)
+![SDK_Design_Overall](./doc/image/SDK_Design_Overall.png)
 
 The SDK adopts a layered design and consists of five layers from top to bottom, namely the DIDComm messaging layer, the identity and credential service layer, the cryptographic service layer, the cryptographic primitive layer, and the root of trust layer. It is worth noting that each layer is composed of multiple components, allowing developers to customize the SDK to meet hardware limitations and application requirements.
 
