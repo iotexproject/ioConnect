@@ -57,7 +57,7 @@ The IoTex DeviceConnect SDK represents a leading position in the industry due to
 
 It is well-known that embedded development is not only challenging due to the complexity of programming languages (C/C++), but also due to the complexity and diversity of system architectures, compile environments, and supporting components.
 
-![Embedded](.\Doc\image\Embedded.png)
+![Embedded](./doc/image/Embedded.png)
 
 From the figure above, the left circles represent some of the design factors that embedded software engineers need to consider when designing IoT projects (only listing a few examples). Each factor contains numerous subcategories for developers to choose from, indicating the complexity that embedded software engineers face. On the right side, it represents the current development direction in the embedded field, which is moving towards consolidation and unification. For example, in the process of chip development, ARM has proposed and designed the CMSIS standard framework to unify the diverse types of ARM chips (SoCs) on the market. Similarly, OpenHarmony aims to unify the chaotic situation in the entire embedded operating system. Each black wireframe in the diagram simply represents the difficulties encountered during the unification process.
 
@@ -72,11 +72,11 @@ Based on the above, a qualified embedded engineer or an excellent IoT project ne
 - Identifying the development components required by the project.
 
 
-![Embeded_heirarchy](.\Doc\image\Embeded_heirarchy.png)
+![Embeded_heirarchy](.\doc\image\Embeded_heirarchy.png)
 
 The development focus has shifted from initially independent hardware drivers (represented by register-based operations) to chip manufacturers integrating their products into development libraries (represented by STM32’s Standard Peripherals Firmware Library), and finally to the current development of active community frameworks and large chip manufacturers’ SDKs (represented by Raspberry Pi, Arduino, ESP32, etc.). Overall, embedded and IoT development is moving towards convergence.
 
-![PAL](.\Doc\image\PAL.png)
+![PAL](.\doc\image\PAL.png)
 
 This SDK aims to support a wide range of embedded systems, not limited to specific device types. Therefore, the SDK takes a higher-level perspective and, through its unique core framework and platform adaptation layer (PAL) structure, adapts to different chip architectures and device designs.
 
@@ -129,7 +129,7 @@ Suppose a Web2 project needs to send data to a W3Bstream node. The traditional h
 
 With the introduction of the standard layer, the handling process becomes as follows:
 
-![SL_Handler](.\Doc\image\SL_Handler.png)
+![SL_Handler](.\doc\image\SL_Handler.png)
 
 - The original data flow of the Web2 project involves obtaining data from a sensor and sending an event to the ESP32 event handler, which is then routed to the data handler of the Web2 project for asynchronous and multithreaded processing.
 
@@ -154,7 +154,7 @@ In conclusion, the SDK’s innovative technological details represent a leading 
 
 #### **Supported Active Communities**
 
-![support](.\Doc\image\support.png)
+![support](.\doc\image\support.png)
 
 The SDK is currently supported by the active communities shown in the figure above. It has been submitted to the Arduino and ESPRESSIF communities and passed their component approval processes.
 
@@ -166,13 +166,13 @@ The SDK is currently supported by the active communities shown in the figure abo
 
 The IoTeX's PSACrypto is a cryptographic library (the southen part of SDK) that supports a wide range of embedded devices with flash memory from as low as 20KB to several hundred MB. It is fully compliant with the Arm PSA Certified Crypto API 1.1 standard. With its unique frontend and backend design, it allows users to choose a backend cryptographic library that best suits their needs, thereby achieving a good balance between the performance and memory footprint. Moreover, an optimized visual configuration tool provides great flexibility for developers to customize a cryptographic library based on the available hardware resources and specific project requirements and facilitates developers to integrate the PSACrypto library into their projects seamlessly.
 
-![Core](.\Doc\image\Core.png)
+![Core](.\doc\image\Core.png)
 
 The SDK has obtained the PSA Certified Crypto API label.
 
 [IoTeX PSA Crypto \| PSA Certified](https://www.psacertified.org/products/iotex-psa-crypto/)
 
-![psacertified](.\Doc\image\psacertified.jpg)
+![psacertified](.\doc\image\psacertified.jpg)
 
 
 
