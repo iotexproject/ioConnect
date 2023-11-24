@@ -1,0 +1,1064 @@
+mainmenu "W3B Stream SDK Config"
+
+menu "PSA Cryptography"
+
+    config PSA_CRYPTO_C
+        bool "Enable the Platform Security Architecture cryptography API"
+        default y
+        help
+            Enable the Platform Security Architecture cryptography API.
+            
+            Module:  library/psa_crypto.c
+
+        choice PSA_CRYPTO_BACKENDS_SELECTION
+            prompt "Select Crypto-Backends For PSA"
+            
+                config PSA_CRYPTO_BACKENDS_MBEDTLS
+                    bool "Mbedtls"
+                
+                config PSA_CRYPTO_BACKENDS_TINYCRYPT
+                    bool "Tinycrypt"
+       
+        endchoice
+
+    menu "Random Generator"
+
+        config PSA_CRYPTO_EXTERNAL_RNG
+            bool "Use an External Random Generator"
+            default y
+            help 
+                Make the PSA Crypto module use an external random generator provided
+                by a driver, instead of IOTEX's entropy and DRBG modules.
+                
+                This random generator must deliver random numbers with cryptographic
+                quality and high performance. It must supply unpredictable numbers
+                with a uniform distribution. The implementation of this function
+                is responsible for ensuring that the random generator is seeded
+                with sufficient entropy. If you have a hardware TRNG which is slow
+                or delivers non-uniform output, declare it as an entropy source
+                with iotex_entropy_add_source() instead of enabling this option.
+                
+                If you enable this option, you must configure the type
+                ::iotex_psa_external_random_context_t in psa/crypto_platform.h
+                and define a function called iotex_psa_external_get_random()
+                with the following prototype:
+                
+                ```
+                psa_status_t iotex_psa_external_get_random(
+                    iotex_psa_external_random_context_t *context,
+                    uint8_t *output, size_t output_size, size_t *output_length);
+                ```
+                
+                The context value is initialized to 0 before the first call.
+                The function must fill the output buffer with output_size bytes
+                of random data and set *output_length to output_size.
+                
+                warning If you enable this option, code that uses the PSA cryptography
+                interface will not use any of the entropy sources set up for the entropy module, 
+                nor the NV seed that PSA_ENTROPY_NV_SEED enables.
+
+        menu "Entropy Configration"
+            depends on !PSA_CRYPTO_EXTERNAL_RNG
+
+            config PSA_ENTROPY_C
+                bool "Enable the Platform-specific Entropy Code"
+                depends on PSA_SHA512_C || PSA_SHA512_C
+                default y
+                help
+                    Enable the platform-specific entropy code.
+                    
+                    Module:  library/entropy.c
+                    Caller:
+                    
+                    This module provides a generic entropy pool
+                    
+
+            config PSA_NO_DEFAULT_ENTROPY_SOURCES
+                bool "Do Not Add Default Entropy Sources"
+                default n
+                help
+                    Do not add default entropy sources in iotex_entropy_init().
+                    
+                    This is useful to have more control over the added entropy sources in an application.
+                    
+                    Enable this macro to prevent loading of default entropy functions.
+                    
+            config PSA_NO_PLATFORM_ENTROPY
+                bool "Disable the Built-in Platform Entropy Functions"
+                default y
+                help 
+                    Do not use built-in platform entropy functions.
+                    This is useful if your platform does not support standards like the /dev/urandom or Windows CryptoAPI.
+                    
+                    Enable this macro to disable the built-in platform entropy functions.
+
+            config PSA_ENTROPY_HARDWARE_ALT
+                bool "Use Ext Implementation of a Hardware Entropy Collector. (HEC)"
+                help
+                    Your function must be called iotex_hardware_poll(), have the same prototype as declared in library/entropy_poll.h, 
+                    and accept NULL as first argument.
+                    
+                    Enable to use your own hardware entropy collector.
+
+            config PSA_ENTROPY_FORCE_SHA256
+                bool "Force the Entropy Accumulator to Use a SHA-256 Accumulator"
+                depends on PSA_SHA256_C
+                default n
+                help
+                    Force the entropy accumulator to use a SHA-256 accumulator instead of the default SHA-512 based one (if both are available).
+
+                    On 32-bit systems SHA-256 can be much faster than SHA-512. 
+                    Use this option if you have performance concerns.
+                    
+                    This option is only useful if both PSA_SHA256_C and PSA_SHA512_C are defined. 
+                    Otherwise the available hash module is used.
+
+            config PSA_ENTROPY_NV_SEED
+                bool "Enable the Non-volatile (NV) Seed File-based Entropy Source."
+                depends on PSA_ENTROPY_C
+                default n
+                help
+                    Enable the non-volatile (NV) seed file-based entropy source.
+                    (Also enables the NV seed read/write functions in the platform layer)
+                    
+                    This is crucial (if not required) on systems that do not have a
+                    cryptographic entropy source (in hardware or kernel) available.
+                    
+                    The read/write functions that are used by the entropy source are
+                    determined in the platform layer, and can be modified at runtime and/or
+                    compile-time depending on the flags (PSA_PLATFORM_NV_SEED_*) used.
+                    
+                    If you use the default implementation functions that read a seedfile
+                    with regular fopen(), please make sure you make a seedfile with the
+                    proper name (defined in PSA_PLATFORM_STD_NV_SEED_FILE) and at
+                    least IOTEX_ENTROPY_BLOCK_SIZE bytes in size that can be read from
+                    and written to or you will get an entropy source error! The default
+                    implementation will only use the first PSA_ENTROPY_BLOCK_SIZE
+                    bytes from the file.
+                    
+                    The entropy collector will write to the seed file before entropy is
+                    given to an external source, to update it.
+
+            config PSA_INJECT_ENTROPY
+                bool "Enable Support for Entropy Injection"
+                default n
+                help
+                    Enable support for entropy injection at first boot. This feature is
+                    required on systems that do not have a built-in entropy source (TRNG).
+                    This feature is currently not supported on systems that have a built-in entropy source.
+
+        endmenu
+        
+    endmenu
+
+
+    menuconfig PSA_CIPHER_ENABLE
+        bool "Enable PSA Cipher Module"
+        default y
+
+    if PSA_CIPHER_ENABLE
+        
+        menu "PSA Cipher Compatible Types"
+        
+            config PSA_CIPHER_SUPPORT_AES
+                bool "Support PSA Cipher Key Type -- AES"
+                default  y
+
+            config PSA_CIPHER_SUPPORT_ARIA
+                bool "Support PSA Cipher Key Type -- ARIA"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default n
+
+            config PSA_CIPHER_SUPPORT_DES
+                bool "Support PSA Cipher Key Type -- DES"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default n
+
+            config PSA_CIPHER_SUPPORT_CAMELLIA
+                bool "Support PSA Cipher Key Type -- CAMELLIA"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default n
+
+            config PSA_CIPHER_SUPPORT_SM4
+                bool "Support PSA Cipher Key Type -- SM4"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default n
+
+            config PSA_CIPHER_SUPPORT_CHACHA20
+                bool "Support PSA Cipher Key Type -- CHACHA20"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default n                
+                    
+        endmenu
+
+        menu "PSA Cipher MODE Support"
+        
+            config PSA_CIPHER_MODE_CBC_SUPPORT
+                bool "Enable Cipher Block Chaining mode (CBC)"
+                default y
+                help
+                    Enable Cipher Block Chaining mode (CBC) for symmetric ciphers.
+
+            config PSA_CIPHER_MODE_CFB_SUPPORT
+                bool "Enable Cipher Feedback mode (CFB)"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default n
+                help
+                    Enable Cipher Feedback mode (CFB) for symmetric ciphers.
+
+            config PSA_CIPHER_MODE_CTR_SUPPORT
+                bool "Enable Counter Block Cipher mode (CTR)"
+                default y
+                help
+                    Enable Counter Block Cipher mode (CTR) for symmetric ciphers. 
+
+            config PSA_CIPHER_MODE_OFB_SUPPORT
+                bool "Enable Output Feedback mode (OFB)"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default n
+                help
+                    Enable Output Feedback mode (OFB) for symmetric ciphers.
+
+            config PSA_CIPHER_MODE_XTS_SUPPORT
+                bool "Enable Xor-encrypt-xor with ciphertext stealing mode (XTS)"
+                default n
+                depends on PSA_CIPHER_SUPPORT_AES && !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                help
+                    Enable Xor-encrypt-xor with ciphertext stealing mode (XTS) for AES.
+                              
+        endmenu
+
+        menuconfig PSA_CIPHER_PADDING_ENABLE
+            bool  "PSA Cipher Padding Mode Enable"
+            default y
+            help 
+                PSA_CIPHER_PADDING_XXX: Enable or Disable macros to add support for
+                specific padding modes in the cipher layer with cipher modes that support padding (e.g. CBC)
+                
+                If you disable all padding modes, only full blocks can be used with CBC.
+                
+        if PSA_CIPHER_PADDING_ENABLE
+        
+            config PSA_CIPHER_PADDING_PKCS7
+                bool "Support Cipher Padding Mode PKCS7"
+                default y
+                
+            config PSA_CIPHER_PADDING_ONE_AND_ZEROS
+                bool "Support Cipher Padding Mode One and Zeros"
+                default y
+
+            config PSA_CIPHER_PADDING_ZEROS_AND_LEN
+                bool "Support Cipher Padding Mode Zeros and Len"
+                default y
+
+            config PSA_CIPHER_PADDING_ZEROS
+                bool "Support Cipher Padding Mode Zeros"
+                default y
+            
+        endif
+
+        menu "AES Configration"
+            depends on PSA_CIPHER_SUPPORT_AES
+
+            config PSA_CIPHER_AES_ROM_TABLES
+                bool "Use Precomputed AES Tables Stored in ROM"
+                default n
+                help 
+                    Enable this macro to use precomputed AES tables stored in ROM.
+                    Disable this macro to generate AES tables in RAM at runtime.
+                    
+                    Tradeoff: Using precomputed ROM tables reduces RAM usage by ~8kb (or ~2kb if PSA_CIPHER_AES_FEWER_TABLES is used) and reduces the initialization time before the first AES operation can be performed.
+                    It comes at the cost of additional ~8kb ROM use (resp. ~2kb if PSA_CIPHER_AES_FEWER_TABLES below is used), and potentially degraded performance if ROM access is slower than RAM access.
+
+                    This option is independent of PSA_CIPHER_AES_FEWER_TABLES.
+
+            config PSA_CIPHER_AES_FEWER_TABLES
+                bool "Use less ROM/RAM for AES tables"
+                default n                    
+                help
+                    Enable this macro omits 75% of the AES tables from ROM / RAM (depending on the value of PSA_CIPHER_AES_ROM_TABLES) 
+                    by computing their values on the fly during operations(the tables are entry-wise rotations of one another).
+
+                    Tradeoff: Enable this reduces the RAM / ROM footprint by ~6kb 
+                    but at the cost of more arithmetic operations during runtime. 
+                    Specifically, one has to compare 4 accesses within
+                    different tables to 4 accesses with additional arithmetic
+                    operations within the same table. The performance gain/loss
+                    depends on the system and memory details.
+                    
+                    This option is independent of PSA_CIPHER_AES_ROM_TABLES.
+        endmenu
+
+        menu "Camellia Configration"
+            depends on PSA_CIPHER_SUPPORT_CAMELLIA
+
+            config PSA_CAMELLIA_SMALL_MEMORY
+                bool "Use Less ROM For the Camellia"
+                default n
+                help 
+                    Use less ROM for the Camellia implementation (saves about 768 bytes).
+                    
+                    Enable this macro to use less memory for Camellia.
+
+        endmenu
+
+    endif
+
+    menuconfig PSA_MESSAGE_DIGEST_ENABLE
+        bool "Enable PSA Message Digest Module"
+        default y
+
+    if PSA_MESSAGE_DIGEST_ENABLE
+
+        menu "PSA_MD_SUPPORT_MD"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+
+            config PSA_MD_SUPPORT_MD2
+                bool "Support PSA MD Type -- MD2"
+                default  n
+                help
+                    The MD2 hash is weak and deprecated and is only recommended for use in legacy protocols.
+
+            config PSA_MD_SUPPORT_MD4
+                bool "Support PSA MD Type -- MD4"
+                default  n
+                help
+                    The MD4 hash is weak and deprecated and is only recommended for use in legacy protocols. 
+                    
+            config PSA_MD_SUPPORT_MD5
+                bool "Support PSA MD Type -- MD5"
+                default  n
+                help
+                    The MD5 hash is weak and deprecated and is only recommended for use in legacy protocols.                    
+
+        endmenu # "PSA_MD_SUPPORT_MD"
+
+        menu "PSA_MD_SUPPORT_SHA"
+
+            config PSA_MD_SUPPORT_SHA1
+                bool "Support PSA MD Type -- SHA1"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default  n
+                help
+                    The SHA-1 hash is weak and deprecated and is only recommended for use in legacy protocols.                                
+
+            config PSA_MD_SUPPORT_SHA224
+                bool "Support PSA MD Type -- SHA224"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default  n
+                help
+                    NIST, FIPS Publication 180-4: Secure Hash Standard (SHS), August 2015.
+                    https://doi.org/10.6028/NIST.FIPS.180-4                                
+
+            config PSA_MD_SUPPORT_SHA256
+                bool "Support PSA MD Type -- SHA256"
+                default  y
+                help
+                    NIST, FIPS Publication 180-4: Secure Hash Standard (SHS), August 2015.
+                    https://doi.org/10.6028/NIST.FIPS.180-4 
+
+            config PSA_MD_SUPPORT_SHA384
+                bool "Support PSA MD Type -- SHA384"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default  n
+                help
+                    NIST, FIPS Publication 180-4: Secure Hash Standard (SHS), August 2015.
+                    https://doi.org/10.6028/NIST.FIPS.180-4
+
+            config PSA_MD_SUPPORT_SHA512
+                bool "Support PSA MD Type -- SHA512"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default  n
+                help
+                    NIST, FIPS Publication 180-4: Secure Hash Standard (SHS), August 2015.
+                    https://doi.org/10.6028/NIST.FIPS.180-4
+                    
+            config PSA_MD_SUPPORT_SHA512_224
+                bool "Support PSA MD Type -- SHA512/224"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default  n
+                help
+                    NIST, FIPS Publication 180-4: Secure Hash Standard (SHS), August 2015.
+                    https://doi.org/10.6028/NIST.FIPS.180-4
+
+            config PSA_MD_SUPPORT_SHA512_256
+                bool "Support PSA MD Type -- SHA512/256"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default  n
+                help
+                    NIST, FIPS Publication 180-4: Secure Hash Standard (SHS), August 2015.
+                    https://doi.org/10.6028/NIST.FIPS.180-4
+
+            config PSA_MD_SUPPORT_SHA3_224
+                bool "Support PSA MD Type -- SHA3/224"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default  n
+                help
+                    NIST, FIPS Publication 202: SHA-3 Standard: Permutation-Based Hash and
+                    Extendable-Output Functions, August 2015. https://doi.org/10.6028/NIST.FIPS.202
+
+            config PSA_MD_SUPPORT_SHA3_256
+                bool "Support PSA MD Type -- SHA3/256"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default  n
+                help
+                    NIST, FIPS Publication 202: SHA-3 Standard: Permutation-Based Hash and
+                    Extendable-Output Functions, August 2015. https://doi.org/10.6028/NIST.FIPS.202
+
+            config PSA_MD_SUPPORT_SHA3_384
+                bool "Support PSA MD Type -- SHA3/384"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default  n
+                help
+                    NIST, FIPS Publication 202: SHA-3 Standard: Permutation-Based Hash and
+                    Extendable-Output Functions, August 2015. https://doi.org/10.6028/NIST.FIPS.202
+
+            config PSA_MD_SUPPORT_SHA3_512
+                bool "Support PSA MD Type -- SHA3/512"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                default  n
+                help
+                    NIST, FIPS Publication 202: SHA-3 Standard: Permutation-Based Hash and
+                    Extendable-Output Functions, August 2015. https://doi.org/10.6028/NIST.FIPS.202
+
+        endmenu
+
+        config PSA_MD_SUPPORT_RIPEND160
+            bool "Support PSA MD Type -- Ripend160"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default  n
+            help
+                RIPEMD-160 is defined in RIPEMD-160: A Strengthened Version of RIPEMD [RIPEMD], and also in ISO/IEC
+                10118-3:2018 IT Security techniques — Hash-functions — Part 3: Dedicated hash-functions [ISO10118].
+
+
+        config PSA_MD_SUPPORT_SHAKE256_512
+            bool "Support PSA MD Type -- SHAKE256/512"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default  n
+            help
+                This is the prehashing for Ed448ph
+                NIST, FIPS Publication 202: SHA-3 Standard: Permutation-Based Hash and
+                Extendable-Output Functions, August 2015. https://doi.org/10.6028/NIST.FIPS.202
+
+        config PSA_MD_SUPPORT_SM3
+            bool "Support PSA MD Type -- SM3"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help 
+                SM3 is defined in ISO/IEC 10118-3:2018 IT Security techniques — Hash-functions — Part 3: Dedicated
+                hash-functions [ISO10118], and also in GM/T 0004-2012: SM3 cryptographic hash algorithm [CSTC0004]
+
+    endif
+
+    menuconfig PSA_MAC_ENABLE
+        bool "Enable PSA Message Authentication Codes Module (MAC)"
+        default y
+
+    if PSA_MAC_ENABLE
+
+        config PSA_MAC_HMAC
+            bool "Enable PSA MAC ALG -- HMAC"
+            default n
+            help
+                For example, PSA_ALG_HMAC(PSA_ALG_SHA_256) is HMAC-SHA-256.
+                The HMAC construction is defined in HMAC: Keyed-Hashing for Message Authentication [RFC2104].
+                Compatible key types
+                    PSA_KEY_TYPE_HMAC
+
+        config PSA_MAC_CBC_MAC
+            bool "Enable PSA MAC ALG -- CBC MAC"
+            default n
+            help
+                The CBC-MAC message-authentication-code algorithm, constructed over a block cipher.
+                Warning: CBC-MAC is insecure in many cases. A more secure mode, such as PSA_ALG_CMAC, is recommended.
+                The CBC-MAC algorithm must be used with a key for a block cipher. For example, one of PSA_KEY_TYPE_AES.
+                CBC-MAC is defined as MAC Algorithm 1 in ISO/IEC 9797-1:2011 Information technology — Security techniques — Message Authentication Codes (MACs) — Part 1: Mechanisms using a block cipher [ISO9797].
+                Compatible key types
+                    PSA_KEY_TYPE_AES
+                    PSA_KEY_TYPE_ARIA
+                    PSA_KEY_TYPE_DES
+                    PSA_KEY_TYPE_CAMELLIA
+                    PSA_KEY_TYPE_SM4
+
+        config PSA_MAC_CMAC
+            bool "Enable PSA MAC ALG -- CMAC"
+            default n
+            help
+                The CMAC message-authentication-code algorithm, constructed over a block cipher.
+                The CMAC algorithm must be used with a key for a block cipher. For example, when used with a key with type PSA_KEY_TYPE_AES, the resulting operation is AES-CMAC.
+                CMAC is defined in NIST Special Publication 800-38B: Recommendation for Block Cipher Modes of Operation: the CMAC Mode for Authentication [SP800-38B].
+                Compatible key types
+                    PSA_KEY_TYPE_AES
+                    PSA_KEY_TYPE_ARIA
+                    PSA_KEY_TYPE_DES
+                    PSA_KEY_TYPE_CAMELLIA
+                    PSA_KEY_TYPE_SM4
+                            
+        config PSA_MAC_TRUNCATED_MAC
+            bool "Enable PSA MAC ALG -- Truncated MAC"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                A truncated MAC algorithm is identical to the corresponding MAC algorithm except that the MAC value for the truncated algorithm consists of only the first mac_length bytes of the MAC value for the untruncated algorithm.
+                The untruncated MAC algorithm can be recovered using PSA_ALG_FULL_LENGTH_MAC().
+                Compatible key types
+                    The resulting truncated MAC algorithm is compatible with the same key types as the MAC algorithm used to construct it.
+
+        config PSA_MAC_FULL_LENGTH_MAC
+            bool "Enable PSA MAC ALG -- Full Length MAC"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                The corresponding MAC algorithm with an untruncated MAC.
+                Unspecified if mac_alg is not a supported MAC algorithm.
+                Compatible key types
+                    The resulting untruncated MAC algorithm is compatible with the same key types as the MAC algorithm used to construct it.
+
+        config PSA_MAC_AT_LEAST_THIS_LENGTH_MAC
+            bool "Enable PSA MAC ALG -- At Least This Length MAC"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                A key with a minimum-MAC-length MAC wildcard algorithm as permitted algorithm policy can be used with all MAC algorithms sharing the same base algorithm, and where the (potentially truncated) MAC length of the specific algorithm is equal to or larger then the wildcard algorithm’s minimum MAC length.
+                The untruncated MAC algorithm can be recovered using PSA_ALG_FULL_LENGTH_MAC().
+                Compatible key types
+                    The resulting wildcard MAC algorithm is compatible with the same key types as the MAC algorithm used to construct it.
+
+    endif
+
+    menuconfig PSA_AEAD_ENABLE
+        bool "Enable PSA Authenticated Encryption with Associated Data Module (AEAD)"
+        default y
+
+    if PSA_AEAD_ENABLE
+
+        config PSA_AEAD_CCM
+            bool "Enable PSA AEAD ALG -- CCM"
+            default n
+            help
+                The CCM block cipher mode is defined in Counter with CBC-MAC (CCM) [RFC3610].
+                IETF, Counter with CBC-MAC (CCM), September 2003.
+                https://tools.ietf.org/html/rfc3610
+                Compatible key types
+                    PSA_KEY_TYPE_AES
+                    PSA_KEY_TYPE_ARIA
+                    PSA_KEY_TYPE_CAMELLIA
+                    PSA_KEY_TYPE_SM4
+
+        config PSA_AEAD_GCM
+            bool "Enable PSA AEAD ALG -- GCM"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                The GCM block cipher mode is defined in NIST Special Publication 800-38D: Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC [SP800-38D].
+                NIST, NIST Special Publication 800-38D: Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode (GCM) and GMAC, November 2007.
+                https://doi.org/10.6028/NIST.SP.800-38D
+                Compatible key types
+                    PSA_KEY_TYPE_AES
+                    PSA_KEY_TYPE_ARIA
+                    PSA_KEY_TYPE_CAMELLIA
+                    PSA_KEY_TYPE_SM4
+                                
+        config PSA_AEAD_CHACHA20_POLY1305
+            bool "Enable PSA AEAD ALG -- CHACHA20_POLY1305"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                Implementations must support 16-byte tags. It is recommended that truncated tag sizes are rejected.
+                Compatible key types
+                    PSA_KEY_TYPE_CHACHA20
+                                            
+        config PSA_AEAD_WITH_SHORTENED_TAG
+            bool "Enable PSA AEAD ALG -- AEAD With Shortened TAG"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                An AEAD algorithm with a shortened tag is similar to the corresponding AEAD algorithm, but has an authentication tag that consists of fewer bytes. Depending on the algorithm, the tag length might affect the calculation of the ciphertext.
+                The AEAD algorithm with a default length tag can be recovered using PSA_ALG_AEAD_WITH_DEFAULT_LENGTH_TAG().
+                Compatible key types
+                    The resulting AEAD algorithm is compatible with the same key types as the AEAD algorithm used to construct it.                                           
+
+        config PSA_AEAD_WITH_DEFAULT_LENGTH_TAG
+            bool "Enable PSA AEAD ALG -- AEAD With Default Length TAG"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                This macro can be used to construct the AEAD algorithm with default tag length from an AEAD algorithm with a shortened tag. See also PSA_ALG_AEAD_WITH_SHORTENED_TAG().
+                Compatible key types
+                    The resulting AEAD algorithm is compatible with the same key types as the AEAD algorithm used to construct it.
+
+        config PSA_AEAD_WITH_AT_LEAST_THIS_LENGTH_TAG
+            bool "Enable PSA AEAD ALG -- AEAD With At Least This Length TAG"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                A key with a minimum-tag-length AEAD wildcard algorithm as permitted algorithm policy can be used with all AEAD algorithms sharing the same base algorithm, and where the tag length of the specific algorithm is equal to or larger then the minimum tag length specified by the wildcard algorithm.
+                The AEAD algorithm with a default length tag can be recovered using PSA_ALG_AEAD_WITH_DEFAULT_LENGTH_TAG().
+                Compatible key types
+                    The resulting wildcard AEAD algorithm is compatible with the same key types as the AEAD algorithm used to construct it.
+                            
+    endif
+
+    menuconfig PSA_KEY_DERIVATION_ENABLE
+        bool "Enable PSA Key Derivation Module"
+        depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+        default n
+
+    if PSA_KEY_DERIVATION_ENABLE
+
+        config PSA_KEY_DERIVATION_HKDF
+        bool "Enable PSA Key Derivation ALG -- HKDF"
+        default n
+        help
+            This is the HMAC-based Extract-and-Expand Key Derivation Function (HKDF) specified by HMAC-based Extract-and-Expand Key Derivation Function (HKDF).
+            This key derivation algorithm uses the following inputs:
+                ∙ PSA_KEY_DERIVATION_INPUT_SALT is the salt used in the “extract” step. It is optional; if omitted, the derivation uses an empty salt.
+                ∙ PSA_KEY_DERIVATION_INPUT_SECRET is the secret key used in the “extract” step.
+                ∙ PSA_KEY_DERIVATION_INPUT_INFO is the info string used in the “expand” step.
+            If PSA_KEY_DERIVATION_INPUT_SALT is provided, it must be before PSA_KEY_DERIVATION_INPUT_SECRET. 
+            PSA_KEY_DERIVATION_INPUT_INFO can be provided at any time after setup and before starting to generate output.
+            Each input may only be passed once.
+            Compatible key types
+                PSA_KEY_TYPE_DERIVE (for the secret key)
+                PSA_KEY_TYPE_RAW_DATA (for the other inputs)
+
+        config PSA_KEY_DERIVATION_TLS12_PRF
+            bool "Enable PSA Key Derivation ALG -- TLS12 PRF"
+            default n
+            help
+                TLS 1.2 uses a custom pseudorandom function (PRF) for key schedule, specified in The Transport Layer Security (TLS) Protocol Version 1.2 [RFC5246] §5. It is based on HMAC and can be used with either SHA-256 or SHA-384.
+                This key derivation algorithm uses the following inputs, which must be passed in the order given here:
+                    ∙ PSA_KEY_DERIVATION_INPUT_SEED is the seed.
+                    ∙ PSA_KEY_DERIVATION_INPUT_SECRET is the secret key.
+                    ∙ PSA_KEY_DERIVATION_INPUT_LABEL is the label.
+                Each input may only be passed once.
+                For the application to TLS-1.2 key expansion:
+                    ∙ The seed is the concatenation of ServerHello.Random + ClientHello.Random.
+                    ∙ The label is "key expansion".
+                Compatible key types
+                    PSA_KEY_TYPE_DERIVE (for the secret key)
+                    PSA_KEY_TYPE_RAW_DATA (for the other inputs)
+
+        config PSA_KEY_DERIVATION_TLS12_PSK_TO_MS
+            bool "Enable PSA Key Derivation ALG -- TLS12 PSK to MS"
+            default n
+            help
+                In a pure-PSK handshake in TLS 1.2, the master secret (MS) is derived from the pre-shared key (PSK) through the application of padding (Pre-Shared Key Ciphersuites for Transport Layer Security (TLS) [RFC4279] §2) and the TLS-1.2 PRF (The Transport Layer Security (TLS) Protocol Version 1.2 [RFC5246] §5). 
+                The latter is based on HMAC and can be used with either SHA-256 or SHA-384.
+                This key derivation algorithm uses the following inputs, which must be passed in the order given here:
+                    ∙ PSA_KEY_DERIVATION_INPUT_SEED is the seed.
+                    ∙ PSA_KEY_DERIVATION_INPUT_SECRET is the PSK. The PSK must not be larger than PSA_TLS12_PSK_TO_MS_PSK_MAX_SIZE.
+                    ∙ PSA_KEY_DERIVATION_INPUT_LABEL is the label.
+                Each input may only be passed once.
+                For the application to TLS-1.2:
+                    ∙ The seed, which is forwarded to the TLS-1.2 PRF, is the concatenation of the ClientHello.Random + ServerHello.Random.
+                    ∙ The label is "master secret" or "extended master secret".
+                Compatible key types
+                    PSA_KEY_TYPE_DERIVE (for the PSK)
+                    PSA_KEY_TYPE_RAW_DATA (for the other inputs)
+                    
+        config PSA_KEY_DERIVATION_PBKDF2_HMAC
+            bool "Enable PSA Key Derivation ALG -- PBKDF2 HMAC"
+            default n
+            help
+                PBKDF2 is specified by PKCS #5: Password-Based Cryptography Specification Version 2.1 [RFC8018] §5.2.
+                This macro constructs a PBKDF2 algorithm that uses a pseudo-random function based on HMAC with the specified hash.
+                This key derivation algorithm uses the following inputs, which must be provided in the following order:
+                    ∙ PSA_KEY_DERIVATION_INPUT_COST is the iteration count. This input step must be used exactly once.
+                    ∙ PSA_KEY_DERIVATION_INPUT_SALT is the salt. This input step must be used one or more times; if used several times, the inputs will be concatenated. This can be used to build the final salt from multiple sources, both public and secret (also known as pepper).
+                    ∙ PSA_KEY_DERIVATION_INPUT_PASSWORD is the password to be hashed. 
+                This input step must be used exactly once.
+                Compatible key types
+                    PSA_KEY_TYPE_DERIVE (for password input)
+                    PSA_KEY_TYPE_PASSWORD (for password input)
+                    PSA_KEY_TYPE_PEPPER (for salt input)
+                    PSA_KEY_TYPE_RAW_DATA (for salt input)
+                    PSA_KEY_TYPE_PASSWORD_HASH (for key verification)        
+                    
+        config PSA_KEY_DERIVATION_PBKDF2_AES_CMAC_PRF_128
+            bool "Enable PSA Key Derivation ALG -- PBKDF2 AES CMAC PRF 128"
+            default n
+            help
+                The PBKDF2-AES-CMAC-PRF-128 password-hashing or key-stretching algorithm.
+                PBKDF2 is specified by PKCS #5: Password-Based Cryptography Specification Version 2.1 [RFC8018] §5.2.
+                This algorithm specifies the PBKDF2 algorithm using the AES-CMAC-PRF-128 pseudo-random function specified by [RFC4615]
+                This key derivation algorithm uses the same inputs as PSA_ALG_PBKDF2_HMAC() with the same constraints.
+                Compatible key types
+                    PSA_KEY_TYPE_DERIVE (for password input)
+                    PSA_KEY_TYPE_PASSWORD (for password input)
+                    PSA_KEY_TYPE_PEPPER (for salt input)
+                    PSA_KEY_TYPE_RAW_DATA (for salt input)
+                    PSA_KEY_TYPE_PASSWORD_HASH (for key verification)
+
+    endif
+
+    menuconfig PSA_ASYMMETRIC_SIGNATURE_ENABLE
+        bool "Enable PSA Asymmetric Signature Module"
+        default n
+
+    if PSA_ASYMMETRIC_SIGNATURE_ENABLE
+
+        config PSA_ASYMMETRIC_SIGNATURE_SUPPORT_RSA_PKCS1V15_SIGN
+            bool "Enable PSA Asymmetric Signature ALG -- RSA PKCS1V15 SIGN"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                This algorithm can be used with both the message and hash signature functions.
+                This signature scheme is defined by PKCS #1: RSA Cryptography Specifications Version 2.2 [RFC8017] §8.2 under the name RSASSA-PKCS1-v1_5.
+                When used with psa_sign_hash() or psa_verify_hash(), the provided hash parameter is used as H from step 2 onwards in the message encoding algorithm EMSA-PKCS1-V1_5-ENCODE() in [RFC8017] §9.2. H is usually the message digest, using the hash_alg hash algorithm.
+                Compatible key types
+                    PSA_KEY_TYPE_RSA_KEY_PAIR
+                    PSA_KEY_TYPE_RSA_PUBLIC_KEY (signature verification only)
+
+        config PSA_ASYMMETRIC_SIGNATURE_SUPPORT_RSA_PKCS1V15_SIGN_RAW
+            bool "Enable PSA Asymmetric Signature ALG -- RSA PKCS1V15 SIGN RAW"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                The raw RSA PKCS#1 v1.5 signature algorithm, without hashing.
+                This algorithm can be only used with the psa_sign_hash() and psa_verify_hash() functions.
+                This signature scheme is defined by PKCS #1: RSA Cryptography Specifications Version 2.2 [RFC8017] §8.2 under the name RSASSA-PKCS1-v1_5.
+                Compatible key types
+                    PSA_KEY_TYPE_RSA_KEY_PAIR
+                    PSA_KEY_TYPE_RSA_PUBLIC_KEY (signature verification only)
+
+        config PSA_ASYMMETRIC_SIGNATURE_SUPPORT_RSA_PSS
+            bool "Enable PSA Asymmetric Signature ALG -- RSA PSS"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                This algorithm can be used with both the message and hash signature functions.
+                This algorithm is randomized: each invocation returns a different, equally valid signature.
+                This is the signature scheme defined by [RFC8017] §8.1 under the name RSASSA-PSS
+                Compatible key types
+                    PSA_KEY_TYPE_RSA_KEY_PAIR
+                    PSA_KEY_TYPE_RSA_PUBLIC_KEY (signature verification only)   
+                    
+        config PSA_ASYMMETRIC_SIGNATURE_SUPPORT_RSA_PSS_ANY_SALT
+            bool "Enable PSA Asymmetric Signature ALG -- RSA PSS ANY SALT"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                This algorithm can be used with both the message and hash signature functions.
+                This algorithm is randomized: each invocation returns a different, equally valid signature.
+                This is the signature scheme defined by [RFC8017] §8.1 under the name RSASSA-PSS
+                Compatible key types
+                    PSA_KEY_TYPE_RSA_KEY_PAIR
+                    PSA_KEY_TYPE_RSA_PUBLIC_KEY (signature verification only)   
+
+        config PSA_ASYMMETRIC_SIGNATURE_SUPPORT_ECDSA
+            bool "Enable PSA Asymmetric Signature ALG -- ECDSA"
+            default y
+            help
+                This algorithm can be used with both the message and hash signature functions.
+                This algorithm is randomized: each invocation returns a different, equally valid signature.
+                This signature scheme is defined by SEC 1: Elliptic Curve Cryptography [SEC1], and also by Public Key Cryptography For The Financial Services Industry: The Elliptic Curve Digital Signature Algorithm (ECDSA) [X9-62], with a random per-message secret number k
+                Compatible key types
+                   PSA_KEY_TYPE_ECC_KEY_PAIR(family)
+                   PSA_KEY_TYPE_ECC_PUBLIC_KEY(family) (signature verification only)
+
+        config PSA_ASYMMETRIC_SIGNATURE_SUPPORT_ECDSA_ANY
+            bool "Enable PSA Asymmetric Signature ALG -- ECDSA ANY"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                The randomized ECDSA signature scheme, without hashing.
+                This algorithm can be only used with the psa_sign_hash() and psa_verify_hash() functions.
+                This algorithm is randomized: each invocation returns a different, equally valid signature.
+                This is the same signature scheme as PSA_ALG_ECDSA(), but without specifying a hash algorithm, and skipping the message hashing operation.
+                This algorithm is only recommended to sign or verify a sequence of bytes that are an already-calculated hash. Note that the input is padded with zeros on the left or truncated on the right as required to fit the curve size.
+                Compatible key types
+                    PSA_KEY_TYPE_ECC_KEY_PAIR(family)
+                    PSA_KEY_TYPE_ECC_PUBLIC_KEY(family) (signature verification only)    
+                    
+        config PSA_ASYMMETRIC_SIGNATURE_SUPPORT_DETERMINISTIC_ECDSA
+            bool "Enable PSA Asymmetric Signature ALG -- Deterministic ECDSA"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                This algorithm can be used with both the message and hash signature functions.
+                This is the deterministic ECDSA signature scheme defined by Deterministic Usage of the Digital Signature Algorithm (DSA) and Elliptic Curve Digital Signature Algorithm (ECDSA) [RFC6979].                
+                Compatible key types
+                    PSA_KEY_TYPE_ECC_KEY_PAIR(family)
+                    PSA_KEY_TYPE_ECC_PUBLIC_KEY(family) (signature verification only) 
+                    
+        config PSA_ASYMMETRIC_SIGNATURE_SUPPORT_PURE_EDDSA
+            bool "Enable PSA Asymmetric Signature ALG -- Pure EdDSA"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                Edwards-curve digital signature algorithm without prehashing (PureEdDSA), using standard parameters.
+                This algorithm can be only used with the psa_sign_message() and psa_verify_message() functions.
+                This is the PureEdDSA digital signature algorithm defined by Edwards-Curve Digital Signature Algorithm (EdDSA) [RFC8032], using standard parameters.
+                PureEdDSA requires an elliptic curve key on a twisted Edwards curve. The following curves are supported:
+                    Edwards25519
+                    Edwards448
+                Compatible key types
+                    PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_TWISTED_EDWARDS)
+                    PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_FAMILY_TWISTED_EDWARDS) (signature verification only)
+                                     
+        config PSA_ASYMMETRIC_SIGNATURE_SUPPORT_ED25519PH
+            bool "Enable PSA Asymmetric Signature ALG -- ED25519PH"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                Edwards-curve digital signature algorithm with prehashing (HashEdDSA), using the Edwards25519 curve.
+                This algorithm can be used with both the message and hash signature functions.
+                This computes the Ed25519ph algorithm as specified in Edwards-Curve Digital Signature Algorithm (EdDSA) [RFC8032] §5.1, and requires an Edwards25519 curve key. An empty string is used as the context. The prehash function is SHA-512.
+                Compatible key types
+                    PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_TWISTED_EDWARDS)
+                    PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_FAMILY_TWISTED_EDWARDS) (signature verification only)
+                                
+        config PSA_ASYMMETRIC_SIGNATURE_SUPPORT_ED448PH
+            bool "Enable PSA Asymmetric Signature ALG -- ED448PH"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help
+                Edwards-curve digital signature algorithm with prehashing (HashEdDSA), using the Edwards448 curve.
+                This algorithm can be used with both the message and hash signature functions.
+                This computes the Ed448ph algorithm as specified in Edwards-Curve Digital Signature Algorithm (EdDSA) [RFC8032] §5.2, and requires an Edwards448 curve key. An empty string is used as the context. The prehash function is the first 64 bytes of the output from SHAKE256
+                Compatible key types
+                    PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_TWISTED_EDWARDS)
+                    PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_FAMILY_TWISTED_EDWARDS) (signature verification only) 
+                    
+        menu "Weierstrass Elliptic Curve Family"
+            depends on PSA_ASYMMETRIC_SIGNATURE_SUPPORT_ECDSA || PSA_ASYMMETRIC_SIGNATURE_SUPPORT_ECDSA_ANY || PSA_ASYMMETRIC_SIGNATURE_SUPPORT_DETERMINISTIC_ECDSA
+
+            menu "PSA ECC SECP Family"
+
+                config PSA_ECC_SECP_K1_192
+                    bool "Support -- SECP192K1"
+                    depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                    default n
+
+                config PSA_ECC_SECP_K1_224
+                    bool "Support -- SECP224K1"
+                    depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                    default n
+
+                config PSA_ECC_SECP_K1_256
+                    bool "Support -- SECP256K1"
+                    default y
+
+                config PSA_ECC_SECP_R1_192
+                    bool "Support -- SECP192R1"
+                    depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                    default n
+
+                config PSA_ECC_SECP_R1_224
+                    bool "Support -- SECP224R1"
+                    depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                    default n
+                    
+                config PSA_ECC_SECP_R1_256
+                    bool "Support -- SECP256R1"
+                    default y 
+
+                config PSA_ECC_SECP_R1_384
+                    bool "Support -- SECP384R1"
+                    depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                    default n
+
+                config PSA_ECC_SECP_R1_521
+                    bool "Support -- SECP521R1"
+                    depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                    default n
+        
+            endmenu
+
+            menu "PSA ECC SECT Family"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+
+                config PSA_ECC_SECT_K1_163
+                    bool "Support -- SECT163K1"
+                    default n
+
+                config PSA_ECC_SECT_K1_233
+                    bool "Support -- SECT233K1"
+                    default n
+
+                config PSA_ECC_SECT_K1_239
+                    bool "Support -- SECT239K1"
+                    default n
+
+                config PSA_ECC_SECT_K1_283
+                    bool "Support -- SECT283K1"
+                    default n
+
+                config PSA_ECC_SECT_K1_409
+                    bool "Support -- SECT409K1"
+                    default n
+
+                config PSA_ECC_SECT_K1_571
+                    bool "Support -- SECT571K1"
+                    default n
+
+                config PSA_ECC_SECT_R1_163
+                    bool "Support -- SECT163R1"
+                    default n
+
+                config PSA_ECC_SECT_R1_233
+                    bool "Support -- SECT233R1"
+                    default n
+
+                config PSA_ECC_SECT_R1_283
+                    bool "Support -- SECT283R1"
+                    default n
+
+                config PSA_ECC_SECT_R1_409
+                    bool "Support -- SECT409R1"
+                    default n
+
+                config PSA_ECC_SECT_R1_571
+                    bool "Support -- SECT571R1"
+                    default n
+                        
+                config PSA_ECC_SECT_R2_163
+                    bool "Support -- SECT163R2"
+                    default n
+    
+            endmenu
+
+            menu "PSA ECC Brainpool P Family"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+
+                config PSA_ECC_BRAINPOOL_P_R1_192
+                    bool "Support -- BrainpoolP192r1"
+                    default n
+
+                config PSA_ECC_BRAINPOOL_P_R1_224
+                    bool "Support -- BrainpoolP224r1"
+                    default n
+
+                config PSA_ECC_BRAINPOOL_P_R1_256
+                    bool "Support -- BrainpoolP256r1"
+                    default n
+
+                config PSA_ECC_BRAINPOOL_P_R1_320
+                    bool "Support -- BrainpoolP320r1"
+                    default n
+
+                config PSA_ECC_BRAINPOOL_P_R1_384
+                    bool "Support -- BrainpoolP384r1"
+                    default n
+
+                config PSA_ECC_BRAINPOOL_P_R1_512
+                    bool "Support -- BrainpoolP512r1"
+                    default n
+                                                        
+            endmenu
+
+            menu "PSA ECC FRP Family"
+                depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+                
+                config PSA_ECC_FRP_256_V1
+                    bool "Support -- FRP256V1"
+                    default n
+
+            endmenu
+
+        endmenu
+
+    endif
+
+    menuconfig PSA_ASYMMETRIC_ENCRYPTION_ENABLE
+        bool "Enable PSA Asymmetric Encryption Module"
+        depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+        default n
+
+    if PSA_ASYMMETRIC_ENCRYPTION_ENABLE
+
+        config PSA_ASYMMETRIC_ENCRYPTION_SUPPORT_RSA_PKCS1V15_CRYPT
+            bool "Enable PSA Asymmetric Encryption ALG -- RSA PKCS1V15 CRYPT"
+            default n
+            help
+                This encryption scheme is defined by PKCS #1: RSA Cryptography Specifications Version 2.2 [RFC8017] §7.2 under the name RSAES-PKCS-v1_5.
+                Compatible key types
+                    PSA_KEY_TYPE_RSA_KEY_PAIR
+                    PSA_KEY_TYPE_RSA_PUBLIC_KEY (asymmetric encryption only)     
+
+        config PSA_ASYMMETRIC_ENCRYPTION_SUPPORT_RSA_OAEP
+            bool "Enable PSA Asymmetric Encryption ALG -- RSA OAEP"
+            default n
+            help
+                This encryption scheme is defined by [RFC8017] §7.1 under the name RSAES-OAEP, with the following options:
+                    ∙ The mask generation function MGF1 defined in [RFC8017] Appendix B.2.1.
+                    ∙ The specified hash algorithm is used to hash the label, and for the mask generation function.
+                Compatible key types
+                    PSA_KEY_TYPE_RSA_KEY_PAIR
+                    PSA_KEY_TYPE_RSA_PUBLIC_KEY (asymmetric encryption only)
+                    
+    endif
+    
+    menuconfig PSA_KEY_AGREEMENT_ENABLE
+        bool "Enable PSA Key Agreement Module"
+        default n
+
+    if PSA_KEY_AGREEMENT_ENABLE
+
+        config PSA_KEY_AGREEMENT_SUPPORT_FFDH
+            bool "Support Key Agreement ALG -- FFDH"
+            depends on !PSA_CRYPTO_BACKENDS_TINYCRYPT
+            default n
+            help 
+                This key agreement scheme is defined by NIST Special Publication 800-56A: Recommendation for Pair-Wise
+                Key-Establishment Schemes Using Discrete Logarithm Cryptography [SP800-56A] §5.7.1.1 under the name FFC DH.
+
+        config PSA_KEY_AGREEMENT_SUPPORT_ECDH
+            bool "Support Key Agreement ALG -- ECDH"
+            default n                
+            help
+                For Montgomery curves (curve family PSA_ECC_FAMILY_MONTGOMERY), the shared secret is the x-coordinate of Z = d_A Q_B = d_B Q_A in little-endian byte order.
+                    — For Curve25519, this is the X25519 function defined in Curve25519: new Diffie-Hellman speed records [Curve25519]. The bit size m is 255.
+                    — For Curve448, this is the X448 function defined in Ed448-Goldilocks, a new elliptic curve [Curve448]. The bit size m is 448.
+                For Weierstrass curves (curve families PSA_ECC_FAMILY_SECP_XX, PSA_ECC_FAMILY_SECT_XX, PSA_ECC_FAMILY_BRAINPOOL_P_R1 and PSA_ECC_FAMILY_FRP) the shared secret is the x-coordinate of Z = h
+                d_A Q_B = h d_B Q_A in big-endian byte order. This is the Elliptic Curve Cryptography Cofactor Diffie-Hellman primitive defined by SEC 1: Elliptic Curve Cryptography [SEC1] §3.3.2 as, and also as
+                ECC CDH by NIST Special Publication 800-56A: Recommendation for Pair-Wise Key-Establishment Schemes Using Discrete Logarithm Cryptography [SP800-56A] §5.7.1.2.
+                    — Over prime fields (curve families PSA_ECC_FAMILY_SECP_XX, PSA_ECC_FAMILY_BRAINPOOL_P_R1 and PSA_ECC_FAMILY_FRP), the bit size is m = ceiling(log_2(p)) for the field F_p.
+                    — Over binary fields (curve families PSA_ECC_FAMILY_SECT_XX), the bit size is m for the field F_{2^m}.
+
+    endif
+
+    menuconfig PSA_KEY_STORAGE_C
+        bool "Enable PSA key storage"
+        select ENABLE_HAL_SUPPORT
+        help 
+            Enable the Platform Security Architecture persistent key storage.
+            
+            Module:  library/psa_crypto_storage.c
+    
+    if PSA_KEY_STORAGE_C
+    
+        choice PSA_ITS_TYPE
+            prompt "Select ITS Type"
+            
+                config PSA_ITS_NVS_C
+                    bool "Support NVS"
+                    help 
+                        Enable the emulation of the Platform Security Architecture
+                        Internal Trusted Storage (PSA ITS) over NVS.
+
+                        Module:  library/psa_its_nvs.c 
+                
+                config PSA_ITS_FLASH_C
+                    bool "Support FLASH"
+                    help 
+                        Enable the emulation of the Platform Security Architecture
+                        Internal Trusted Storage (PSA ITS) over flash.
+                        
+                        Module:  library/psa_its_flash.c
+        
+                config PSA_ITS_FS_C
+                    bool "Support File System"
+                    help 
+                        Enable the emulation of the Platform Security Architecture
+                        Internal Trusted Storage (PSA ITS) over files.
+                    
+                        Module:  library/psa_its_file.c
+        
+        endchoice
+
+    endif
+
+endmenu
