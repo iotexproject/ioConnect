@@ -10,7 +10,7 @@
 
 #include "upload_data.h"
 #include "ws_mqtt.h"
-#include "wsiotsdk.h"
+#include "DeviceConnect_Core.h"
 
 // #include "view_data.h"
 
@@ -358,7 +358,7 @@ static void __ws_mqtt_task(void *p_arg)
 
     xSemaphoreTake(__g_mqtt_task_sem, portMAX_DELAY);
 
-    eth_addr = iotex_wsiotsdk_get_eth_addr();
+    eth_addr = iotex_deviceconnect_sdk_core_get_eth_addr();
     iotex_eth_address_send(eth_addr, strlen(eth_addr));
 
     while (1) {

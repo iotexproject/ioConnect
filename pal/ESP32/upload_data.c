@@ -1,5 +1,5 @@
 #include "upload_data.h"
-#include "wsiotsdk.h"
+#include "DeviceConnect_Core.h"
 #include "device_connect_config.h"
 
 #include "freertos/FreeRTOS.h"
