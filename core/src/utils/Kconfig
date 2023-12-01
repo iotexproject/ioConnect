@@ -1,0 +1,72 @@
+mainmenu "W3B Stream SDK Config"
+
+menu "Applications"
+
+    menuconfig APP_DEVNET_ACCESS
+        bool "Enable Devnet Access Application"
+
+    if APP_DEVNET_ACCESS
+
+        menu "Device Token"
+            
+            config APP_DEVNET_ACCESS_STUDIO_TOKEN
+                string ""
+
+        endmenu
+
+        choice DEVNET_ACCESS_TYPE
+        prompt "Select Access Type"
+        
+            config APP_DEVNET_ACCESS_MQTT
+                bool "MQTT"
+            
+            config APP_DEVNET_ACCESS_HTTP
+                bool "HTTP"
+
+        endchoice
+
+        menu "MQTT TOPIC"
+            depends on APP_DEVNET_ACCESS_MQTT
+
+            config APP_DEVNET_ACCESS_STUDIO_TOPIC
+                string ""
+            
+        endmenu
+
+        menu "MQTT URL"
+            depends on APP_DEVNET_ACCESS_MQTT
+
+            config APP_DEVNET_ACCESS_STUDIO_URL
+                string ""
+                default "devnet-staging-mqtt.w3bstream.com"
+
+        endmenu
+
+        menu "HTTP Route"
+            depends on APP_DEVNET_ACCESS_HTTP
+
+            config APP_DEVNET_ACCESS_STUDIO_ROUTE
+                string "Devnet HTTP Route"
+
+            
+        endmenu
+
+        menu "Reported Data Format"
+
+            config SUPPORT_JSON_FORMAT
+                bool "Support JSON Format"
+                default y
+
+            config SUPPORT_PB_FORMAT
+                bool "Support Protobuf Format"
+                default y
+
+            config SUPPORT_RAW_FORMAT
+                bool "Support RAW Format"
+                default y
+                
+        endmenu
+
+    endif
+
+endmenu

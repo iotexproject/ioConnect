@@ -1,0 +1,47 @@
+{
+  "name": "DevicConnect_Core",
+  "description": "An implementation of the DeviceConnect SDK Core layer.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/machinefi/deviceconnect-sdk"
+  },
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "IoTeX",
+      "email": "suppor@iotex.io",
+      "url": "https://iotex.io/"
+    }
+  ],
+  "frameworks": [
+    "arduino"
+  ],
+  "build": {
+    "flags": [
+      "-I src"
+    ],
+    "srcFilter": [
+    ],
+    "libCompatMode": "strict"
+  },
+  "lib_ldf_mode": "deep+",
+  "export": {
+    "include": [
+      "src/*",
+      "src/include/*",
+      "examples/*",
+      "*.md",
+      "*.json",
+      "*.properties",
+      "LICENSE",
+      "*.ini",
+      "keywords.txt"
+    ],
+    "exclude": [
+      "doc/*",
+      "tests/*",
+      "tools/*",
+      "**/*.txt"
+    ]
+  }
+}

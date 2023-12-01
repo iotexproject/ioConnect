@@ -1,0 +1,33 @@
+mainmenu "W3B Stream SDK Config"
+
+menuconfig ENABLE_HAL_SUPPORT
+    bool "Hardware Abstraction Layer (HAL)"
+    depends on PSA_KEY_STORAGE_C
+
+if ENABLE_HAL_SUPPORT
+
+    choice PLATFORM_TYPE
+    prompt "Select Platform Type"
+
+        config PLATFORM_ARDUINO
+            bool "Support Arduino Platform"
+
+        config PLATFORM_ESPRESSIF
+            bool "Support ESPRESSIF Platform"
+
+        config PLATFORM_LINUX
+            bool "Support Linux Platform"
+    
+    endchoice
+
+    choice SOC_TYPE
+        prompt "Select SoC Type"
+    
+        config SOC_ESP32_SUPPORT
+            bool "Support ESP32 SoC"
+    
+        config SOC_ESP8266_SUPPORT
+            bool "Support ESP8266 SoC"
+            
+    endchoice
+endif
