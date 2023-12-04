@@ -10,8 +10,6 @@ static char app_mqtt_topic[64];
 static int  mqtt_state = WS_MQTT_STATUS_INIT;
 static int  mqtt_server_type = 0;
 
-static int8_t deviceMAC[6] = {0xb0, 0x25, 0xaa, 0x4f, 0xba, 0xaa};
-
 void DevConn_Comm::state_set(int state) {
     if (state >= WS_MQTT_STATUS_MAX)
         return;
@@ -193,6 +191,7 @@ void DevConn_Comm::app_server_start(void) {
     } else
         return;
 
+
     while (!this->_mqttclient.connected()) {        
         if (this->_mqttclient.connect(app_mqtt_host, 1883)) {
             printf("Webstream Server connected!\n");
@@ -260,18 +259,18 @@ void DevConn_Comm::loop(void) {
 
                 this->subscribe(this->state_topic_get());
                 this->state_set(WS_MQTT_STATUS_APP_SERVER_STATUS_SUBSCRIBED);
-
+        
                 break;
 
             case WS_MQTT_STATUS_APP_SERVER_STATUS_SUBSCRIBED:
                 
-                iotex_dev_access_query_dev_register_status(deviceMAC);
+                iotex_dev_access_query_dev_register_status((int8_t *)PalClient.getMac());
                 
                 break;
             case WS_MQTT_STATUS_APP_SERVER_BIND_STATUS_CONFIRM:
 
-                iotex_dev_access_dev_register_confirm(deviceMAC);
-                iotex_dev_access_query_dev_register_status(deviceMAC);
+                iotex_dev_access_dev_register_confirm((int8_t *)PalClient.getMac());
+                iotex_dev_access_query_dev_register_status((int8_t *)PalClient.getMac());
 
                 break;
             default:

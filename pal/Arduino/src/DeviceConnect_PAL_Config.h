@@ -1,0 +1,1 @@
+#define REGISTER_DEV_STATIC_SN                  "114993069231500031"

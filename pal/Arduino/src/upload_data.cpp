@@ -1,12 +1,10 @@
 #include <Arduino.h>
-
 #include "upload_data.h"
 
 DevConn_Data::DevConn_Data() {
     String devsn(REGISTER_DEV_STATIC_SN);
     memcpy(this->device_sn, devsn.c_str(), sizeof(this->device_sn));
  
-    this->_mac = String(REGISTER_DEV_STATIC_MAC);
     this->_state = -1;
 }
 

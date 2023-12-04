@@ -2,6 +2,7 @@
 #define __DEVICE_CONNECT_SDK_PAL_DATA__
 
 #include <Arduino.h>
+#include "DeviceConnect_PAL_Config.h"
 
 #define REGISTER_STATUS_NO_RESPONSE             0
 #define REGISTER_STATUS_DEVICE_SHOULD_ENROLL    1
@@ -11,9 +12,6 @@
 #define REGISTER_STATUS_ALL                     5
 
 #define UPLOAD_DATA_TEST_DEV_MAC_OFFSET         0
-
-#define REGISTER_DEV_STATIC_SN                  "114993069231500030"
-#define REGISTER_DEV_STATIC_MAC                 "b025aa4fbaaa"
 
 class DevConn_Data {
     private:
