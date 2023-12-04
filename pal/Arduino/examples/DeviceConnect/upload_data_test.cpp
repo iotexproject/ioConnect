@@ -2,7 +2,6 @@
 #include <DeviceConnect_Core.h>
 #include "upload_data_test.h"
 
-static int8_t deviceMAC[6] = {0xb0, 0x25, 0xaa, 0x4f, 0xba, 0xaa};
 
 struct upload_data g_upload_data = {0};
 
@@ -58,7 +57,8 @@ void iotex_upload_data_set_value(int value, enum upload_data_type data_type)
         cJSON_AddNumberToObject(user_data, "humidity", g_upload_data.humidity);
 #endif
 
-        iotex_dev_access_data_upload_with_userdata(user_data, 1, IOTEX_USER_DATA_TYPE_JSON, deviceMAC);
+extern uint8_t macAddress[6];        
+        iotex_dev_access_data_upload_with_userdata(user_data, 1, IOTEX_USER_DATA_TYPE_JSON, (int8_t *)macAddress);
 
 // #ifdef UPLOAD_DATA_TYPE_COMPACT    
 //         printf("Upload : [co2] : %d, [tvoc] : %d\n", g_upload_data.co2, g_upload_data.tvoc);

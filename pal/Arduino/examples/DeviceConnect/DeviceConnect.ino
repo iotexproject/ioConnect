@@ -22,6 +22,8 @@
 const char ssid[] = "StayHungry";
 const char pass[] = "zjn.19821225";
 
+uint8_t macAddress[6] = {0};
+
 WiFiClient espClient;
 DevConn_Comm  mqttClient(espClient);
 
@@ -44,6 +46,10 @@ void setup() {
     delay(5000);
     Serial.println();
 
+    WiFi.macAddress(macAddress);
+    Serial.printf("%02x:%02x:%02x:%02x:%02x:%02x\n", macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]);
+
+
     WiFi.hostname(THINGNAME);
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, pass);
@@ -51,6 +57,7 @@ void setup() {
     connectToWiFi(String("Attempting to connect to SSID: ") + String(ssid));  
  
     iotex_device_connect_sdk_init(&mqttClient);
+    iotex_device_connect_sdk_mac_set(macAddress);   
 
 }
 
