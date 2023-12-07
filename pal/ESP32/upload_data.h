@@ -34,14 +34,15 @@ enum WS_PARA_EVENT_DEFINE {
 };
 
 #define UPLOAD_DATA_TEST_DEV_MAC_OFFSET             0
-    
+
+#ifdef IOTEX_DEVICE_CONNECT_DATA_UPDATA_USE_STANDARD_LAYER    
 ESP_EVENT_DECLARE_BASE(REGISTER_STATUS_EVENT_BASE);
 extern esp_event_loop_handle_t register_status_event_handle;
+#endif
 
 ESP_EVENT_DECLARE_BASE(WS_PARA_EVENT_BASE);
 extern esp_event_loop_handle_t ws_para_event_handle;
 
-void iotex_upload_data_set_value(int value, enum upload_data_type data_type);
 char *iotex_devinfo_mac_get(enum dev_mac_type);
 char *iotex_devinfo_dev_sn_get(void);
 int iotex_devinfo_query_dev_sn(void);

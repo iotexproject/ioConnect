@@ -1,6 +1,6 @@
 #include "upload_data.h"
 #include "DeviceConnect_Core.h"
-#include "device_connect_config.h"
+#include "DeviceConnect_PAL_config.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
@@ -10,8 +10,6 @@
 #include "esp_mac.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
-
-static const char *TAG           = "device_connect";
 
 #ifdef IOTEX_DEVICE_CONNECT_DATA_UPDATA_USE_STANDARD_LAYER_TEST
 ESP_EVENT_DEFINE_BASE(SENSOR_DATA_EVENT_BASE);
@@ -49,7 +47,7 @@ static void hex2str(char *buf_hex, int len, char *str)
 static void iotex_dev_mac_init(void)
 {
     memset(&dev_mac_t, 0, sizeof(struct dev_mac));
-    esp_read_mac(dev_mac_t.mac, ESP_MAC_WIFI_STA);
+    esp_read_mac((uint8_t *)dev_mac_t.mac, ESP_MAC_WIFI_STA);
 
     dev_mac_t.mac[5] += UPLOAD_DATA_TEST_DEV_MAC_OFFSET;
 
@@ -60,7 +58,7 @@ static void iotex_dev_mac_init(void)
 char *iotex_devinfo_mac_get(enum dev_mac_type mac_type)
 {
 
-    int8_t *mac_addr = NULL;
+    char *mac_addr = NULL;
 
     if (0 == dev_mac_t.valid)
         return NULL;
@@ -82,20 +80,22 @@ char *iotex_devinfo_mac_get(enum dev_mac_type mac_type)
 
 static void iotex_dev_status_handle(int iotex_status)
 {
+#ifdef IOTEX_DEVICE_CONNECT_DATA_UPDATA_USE_STANDARD_LAYER    
     switch (iotex_status)
     {
     case 0:
-        esp_event_post_to(register_status_event_handle, REGISTER_STATUS_EVENT_BASE, REGISTER_STATUS_DEVICE_SHOULD_ENROLL, NULL, NULL, portMAX_DELAY);
+        esp_event_post_to(register_status_event_handle, REGISTER_STATUS_EVENT_BASE, REGISTER_STATUS_DEVICE_SHOULD_ENROLL, NULL, 0, portMAX_DELAY);
         break;
     case 1:        
-        esp_event_post_to(register_status_event_handle, REGISTER_STATUS_EVENT_BASE, REGISTER_STATUS_DEVICE_CONFIRM_NEEDED, NULL, NULL, portMAX_DELAY);
+        esp_event_post_to(register_status_event_handle, REGISTER_STATUS_EVENT_BASE, REGISTER_STATUS_DEVICE_CONFIRM_NEEDED, NULL, 0, portMAX_DELAY);
         break;    
     case 2:        
-        esp_event_post_to(register_status_event_handle, REGISTER_STATUS_EVENT_BASE, REGISTER_STATUS_DEVICE_SUCCESS, NULL, NULL, portMAX_DELAY);
+        esp_event_post_to(register_status_event_handle, REGISTER_STATUS_EVENT_BASE, REGISTER_STATUS_DEVICE_SUCCESS, NULL, 0, portMAX_DELAY);
         break;           
     default:
         break;
     }
+#endif    
 }
 
 void iotex_upload_data_set_status(int status)
@@ -115,7 +115,7 @@ static void __upload_event_handler(void *handler_args, esp_event_base_t base, in
     cJSON *user_data = cJSON_CreateObject();
     cJSON_AddNumberToObject(user_data, "sensor_type", *(int *)event_data);  
 
-    iotex_dev_access_data_upload_with_userdata(user_data, 1, IOTEX_USER_DATA_TYPE_JSON, iotex_devinfo_mac_get(DEV_MAC_TYPE_HEX));  
+    iotex_dev_access_data_upload_with_userdata(user_data, 1, IOTEX_USER_DATA_TYPE_JSON, (int8_t *)iotex_devinfo_mac_get(DEV_MAC_TYPE_HEX));  
 
     cJSON_Delete(user_data);
 }
@@ -167,6 +167,8 @@ int iotex_devinfo_query_dev_sn(void)
     memset(device_sn, 0, IOTEX_DEVICE_SN_LEN);
     memcpy(device_sn, IOTEX_DEVICE_SN, strlen(IOTEX_DEVICE_SN));
 #endif 
+
+    return 0;
 }
 
 char *iotex_devinfo_dev_sn_get(void)

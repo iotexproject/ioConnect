@@ -61,6 +61,7 @@ enum mqtt_server_type {
 ESP_EVENT_DECLARE_BASE(MQTT_EVENT_BASE);
 extern esp_event_loop_handle_t mqtt_event_handle;
 
+time_t iotex_gettime_func(void);
 int iotex_mqtt_pubscription(unsigned char *topic, unsigned char *buf, unsigned int buflen, int qos);
 int iotex_mqtt_subscription(unsigned char *topic);
 

@@ -39,20 +39,6 @@ static void log_error_if_nonzero(const char *message, int error_code)
     }
 }
 
-static void hex2str(char *buf_hex, int len, char *str)
-{
-    int        i, j;
-    const char hexmap[] = {
-        '0', '1', '2', '3', '4', '5', '6', '7',
-        '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-    for (i = 0, j = 0; i < len; i++) {
-        str[j++] = hexmap[buf_hex[i] >> 4];
-        str[j++] = hexmap[buf_hex[i] & 0x0F];
-    }
-    str[j] = 0;
-}
-
 static void ws_mqtt_set_status(uint8_t status)
 {
 
@@ -164,8 +150,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 {
     ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
     esp_mqtt_event_handle_t  event  = event_data;
-    esp_mqtt_client_handle_t client = event->client;
-    int                      msg_id;
 
     switch ((esp_mqtt_event_id_t)event_id) {
         case MQTT_EVENT_CONNECTED:
@@ -174,7 +158,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
             if (*(enum mqtt_server_type *)handler_args == MQTT_SERVER_TOKEN) {
 #ifdef WS_MQTT_HANDLE_USE_STATUS_MACHINE
                 ws_mqtt_set_status(WS_MQTT_STATUS_TOKEN_SERVER_CONNECTED);
-                iotex_mqtt_subscription("seeed-001");
+                iotex_mqtt_subscription((unsigned char *)"seeed-001");
 #endif
 #ifdef WS_MQTT_HANDLE_USE_EVENT
                 esp_event_post_to(mqtt_event_handle, MQTT_EVENT_BASE, WS_MQTT_STATUS_TOKEN_SERVER_CONNECTED, NULl, 0, portMAX_DELAY);
@@ -244,6 +228,11 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
             } else {
                 int status = ws_mqtt_app_server_parse_data((char *)event->data, (int)event->data_len);
                 iotex_upload_data_set_status(status);
+#ifndef IOTEX_DEVICE_CONNECT_DATA_UPDATA_USE_STANDARD_LAYER                
+                if (1 == status) {
+                    ws_mqtt_set_status(WS_MQTT_STATUS_APP_SERVER_BIND_STATUS_CONFIRM);    
+                }
+#endif                
                 if (2 == status) {
                     ws_mqtt_set_status(WS_MQTT_STATUS_APP_SERVER_BIND_STATUS_SUCCESS);
                     iotex_dev_access_set_mqtt_status(IOTEX_MQTT_BIND_STATUS_OK);
@@ -319,12 +308,18 @@ void ws_mqtt_token_server_request(void)
 
     message = cJSON_PrintUnformatted((const cJSON *)request);
 
-    iotex_mqtt_pubscription(WS_MQTT_TOKEN_SERVER_TOPIC, message, strlen(message), 0);
+    iotex_mqtt_pubscription((unsigned char *)WS_MQTT_TOKEN_SERVER_TOPIC, (unsigned char *)message, strlen(message), 0);
 
     if (message)
         free(message);
 
     cJSON_Delete(request);
+}
+
+
+time_t iotex_gettime_func(void) 
+{
+    return time(NULL);
 }
 
 int iotex_mqtt_pubscription(unsigned char *topic, unsigned char *buf, unsigned int buflen, int qos)
@@ -354,12 +349,7 @@ void ws_mqtt_app_server_start(void)
 
 static void __ws_mqtt_task(void *p_arg)
 {
-    uint8_t * eth_addr = NULL;
-
     xSemaphoreTake(__g_mqtt_task_sem, portMAX_DELAY);
-
-    eth_addr = iotex_deviceconnect_sdk_core_get_eth_addr();
-    iotex_eth_address_send(eth_addr, strlen(eth_addr));
 
     while (1) {
         ESP_LOGI(TAG, "MQTT status : %d", mqtt_status);
@@ -398,19 +388,19 @@ static void __ws_mqtt_task(void *p_arg)
 
             case WS_MQTT_STATUS_APP_SERVER_CONNECTED:
 
-                iotex_mqtt_subscription(ws_mqtt_get_status_topic());
+                iotex_mqtt_subscription((unsigned char *)ws_mqtt_get_status_topic());
 
                 break;
 
             case WS_MQTT_STATUS_APP_SERVER_STATUS_SUBSCRIBED:
 
-                iotex_dev_access_query_dev_register_status(iotex_devinfo_mac_get(DEV_MAC_TYPE_HEX));
+                iotex_dev_access_query_dev_register_status((int8_t *)iotex_devinfo_mac_get(DEV_MAC_TYPE_HEX));
 
                 break;
             case WS_MQTT_STATUS_APP_SERVER_BIND_STATUS_CONFIRM:
 
-                iotex_dev_access_dev_register_confirm(iotex_devinfo_mac_get(DEV_MAC_TYPE_HEX));
-                iotex_dev_access_query_dev_register_status(iotex_devinfo_mac_get(DEV_MAC_TYPE_HEX));
+                iotex_dev_access_dev_register_confirm((int8_t *)iotex_devinfo_mac_get(DEV_MAC_TYPE_HEX));
+                iotex_dev_access_query_dev_register_status((int8_t *)iotex_devinfo_mac_get(DEV_MAC_TYPE_HEX));
 
                 break;
             default:
@@ -418,7 +408,7 @@ static void __ws_mqtt_task(void *p_arg)
                 break;
         }
 
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }
 
@@ -491,9 +481,11 @@ int iotex_ws_comm_init(void)
                                                         0,
                                                         NULL));
 
+#ifdef IOTEX_DEVICE_CONNECT_DATA_UPDATA_USE_STANDARD_LAYER
     ESP_ERROR_CHECK(esp_event_handler_instance_register_with(register_status_event_handle, 
                                                         REGISTER_STATUS_EVENT_BASE, REGISTER_STATUS_USER_CONFIRM, 
                                                         __register_event_handler, NULL, NULL));                                                        
+#endif                                                        
 
 #ifdef WS_MQTT_HANDLE_USE_EVENT
     esp_event_loop_args_t mqtt_event_task_args = {
@@ -515,4 +507,5 @@ int iotex_ws_comm_init(void)
 #ifdef WS_MQTT_HANDLE_USE_STATUS_MACHINE
     xTaskCreate(&__ws_mqtt_task, "__ws_mqtt_task", 1024 * 6, NULL, 10, NULL);
 #endif
+    return 0;
 }
