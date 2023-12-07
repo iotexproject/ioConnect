@@ -7,6 +7,8 @@
 #include "include/utils/iotex_dev_access.h"
 #include "include/psa/crypto.h"
 
+#include "DeviceConnect_Core.h"
+
 #ifdef CONFIG_PSA_ITS_FLASH_C
 #include "include/hal/flash/flash_common.h"
 #endif
@@ -55,8 +57,9 @@ static int hexStr2Bin(char *str, char *bin) {
 
 int iotex_user_wallet_addr_set(char *buf, int32_t buf_len) {
 
-    if (NULL == buf) 
+    if (NULL == buf) {
         return IOTEX_DEV_ACCESS_ERR_BAD_INPUT_PARAMETER;
+	}
 
 	if (0 == buf_len || buf_len > USER_WALLET_ADDR_LEN_MAX)
 		return IOTEX_DEV_ACCESS_ERR_BAD_INPUT_PARAMETER;
@@ -341,9 +344,6 @@ exit:
 
 int iotex_dev_access_query_dev_register_status(int8_t mac[6]) {
 
-	char sign_buf[64]  = {0};
-	unsigned int  sign_len = 0;
-
 	if (NULL == dev_ctx || 0 == dev_ctx->inited)
         return IOTEX_DEV_ACCESS_ERR_NO_INIT;
 
@@ -419,7 +419,6 @@ int iotex_dev_access_dev_register_confirm(int8_t mac[6]) {
 	
 	pb_ostream_t ostream_upload = {0};
 	Upload upload = Upload_init_default;
-	Upload deupload = Upload_init_zero;
 
 	upload.has_header = true;
 	strcpy(upload.header.event_id, IOTEX_EVENT_ID_DEFAULT);
@@ -439,7 +438,7 @@ int iotex_dev_access_dev_register_confirm(int8_t mac[6]) {
 
 	upload.payload.has_pConfirm = true;
 
-	upload.payload.pConfirm.owner.size = hexStr2Bin(wallet_addr + 2, upload.payload.pConfirm.owner.bytes);
+	upload.payload.pConfirm.owner.size = hexStr2Bin(wallet_addr + 2, (char *)upload.payload.pConfirm.owner.bytes);
 	
 	memcpy(raw_data, upload.payload.pConfirm.owner.bytes, upload.payload.pConfirm.owner.size);
 	raw_data[upload.payload.pConfirm.owner.size]     = (char)((timestamp & 0xFF000000) >> 24);
