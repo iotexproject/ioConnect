@@ -35,6 +35,7 @@
 #endif
 
 #include "include/iotex/ecdsa.h"
+#include "include/iotex/eddsa.h"
 #include "include/iotex/ecp.h"
 #include "include/iotex/error.h"
 
@@ -515,7 +516,31 @@ cleanup:
 #endif    
 }
 
+  
 #endif /* defined(IOTEX_PSA_BUILTIN_ALG_ECDSA) || \
         * defined(IOTEX_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA) */
+
+psa_status_t iotex_psa_eddsa_sign_hash(
+    const psa_key_attributes_t *attributes,
+    const uint8_t *key_buffer, size_t key_buffer_size,
+    psa_algorithm_t alg, const uint8_t *hash, size_t hash_length,
+    uint8_t *signature, size_t signature_size, size_t *signature_length )
+{ 
+    return iotex_eddsa_sign( PSA_KEY_TYPE_ECC_GET_FAMILY(attributes->core.type), 
+                    key_buffer, key_buffer_size, 
+                    hash, hash_length, 
+                    signature, signature_length);
+} 
+
+psa_status_t iotex_psa_eddsa_verify_hash(
+    const psa_key_attributes_t *attributes,
+    const uint8_t *key_buffer, size_t key_buffer_size,
+    psa_algorithm_t alg, const uint8_t *hash, size_t hash_length,
+    const uint8_t *signature, size_t signature_length )
+{
+    return iotex_eddsa_verify( PSA_KEY_TYPE_ECC_GET_FAMILY(attributes->core.type), 
+                            key_buffer, key_buffer_size,
+                            hash, hash_length, (uint8_t *)signature, signature_length);    
+}
 
 #endif /* IOTEX_PSA_CRYPTO_C */

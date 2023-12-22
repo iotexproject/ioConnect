@@ -1606,7 +1606,6 @@ static psa_status_t psa_finish_key_creation(
         status = psa_crypto_stop_transaction( );
     }
 #endif /* IOTEX_PSA_CRYPTO_SE_C */
-
     if( status == PSA_SUCCESS )
     {
         *key = slot->attr.id;
@@ -2632,7 +2631,7 @@ static psa_status_t psa_verify_internal( psa_key_id_t key,
         status = psa_driver_wrapper_verify_message(
             &attributes, slot->key.data, slot->key.bytes,
             alg, input, input_length,
-            signature, signature_length );
+            signature, signature_length );          
     }
     else
     {
@@ -2680,6 +2679,14 @@ psa_status_t psa_sign_message_builtin(
                     signature, signature_size, signature_length );
     }
 
+    if ( (alg) == PSA_ALG_PURE_EDDSA )
+    {
+        return psa_driver_wrapper_sign_hash(
+                    attributes, key_buffer, key_buffer_size,
+                    alg, input, input_length,
+                    signature, signature_size, signature_length );
+    }
+
     return( PSA_ERROR_NOT_SUPPORTED );
 }
 
@@ -2717,13 +2724,20 @@ psa_status_t psa_verify_message_builtin(
                     PSA_ALG_SIGN_GET_HASH( alg ),
                     input, input_length,
                     hash, sizeof( hash ), &hash_length );
-
         if( status != PSA_SUCCESS )
             return status;
 
         return psa_driver_wrapper_verify_hash(
                     attributes, key_buffer, key_buffer_size,
                     alg, hash, hash_length,
+                    signature, signature_length );
+    }
+
+    if ( (alg) == PSA_ALG_PURE_EDDSA )
+    {
+        return psa_driver_wrapper_verify_hash(
+                    attributes, key_buffer, key_buffer_size,
+                    alg, input, input_length,
                     signature, signature_length );
     }
 
@@ -2782,7 +2796,15 @@ psa_status_t psa_sign_hash_builtin(
 #endif /* defined(IOTEX_PSA_BUILTIN_ALG_ECDSA) ||
         * defined(IOTEX_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA) */
         }
-        else
+        else if( PSA_ALG_IS_HASH_EDDSA( alg ) || (( alg ) == PSA_ALG_PURE_EDDSA) )
+        {
+            return( iotex_psa_eddsa_sign_hash(
+                        attributes,
+                        key_buffer, key_buffer_size,
+                        alg, hash, hash_length,
+                        signature, signature_size, signature_length ) );            
+        }
+        else 
         {
             return( PSA_ERROR_INVALID_ARGUMENT );
         }
@@ -2851,6 +2873,14 @@ psa_status_t psa_verify_hash_builtin(
                         signature, signature_length ) );
 #endif /* defined(IOTEX_PSA_BUILTIN_ALG_ECDSA) ||
         * defined(IOTEX_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA) */
+        }
+        else if( PSA_ALG_IS_HASH_EDDSA( alg ) || ( (alg) == PSA_ALG_PURE_EDDSA ) )
+        {
+            return( iotex_psa_eddsa_verify_hash(
+                        attributes,
+                        key_buffer, key_buffer_size,
+                        alg, hash, hash_length,
+                        signature, signature_length ) );           
         }
         else
             return( PSA_ERROR_INVALID_ARGUMENT );
@@ -5974,7 +6004,7 @@ psa_status_t psa_generate_key( const psa_key_attributes_t *attributes,
         return( PSA_ERROR_INVALID_ARGUMENT );
 
     status = psa_start_key_creation( PSA_KEY_CREATION_GENERATE, attributes,
-                                     &slot, &driver );
+                                     &slot, &driver );                                  
     if( status != PSA_SUCCESS )
         goto exit;
 
@@ -5984,7 +6014,7 @@ psa_status_t psa_generate_key( const psa_key_attributes_t *attributes,
              PSA_KEY_LOCATION_LOCAL_STORAGE )
         {
             status = psa_validate_key_type_and_size_for_key_generation(
-                attributes->core.type, attributes->core.bits );
+                attributes->core.type, attributes->core.bits );               
             if( status != PSA_SUCCESS )
                 goto exit;
 

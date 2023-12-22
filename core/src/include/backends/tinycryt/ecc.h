@@ -580,6 +580,8 @@ void uECC_vli_nativeToBytes(uint8_t *bytes, int num_bytes,
 void uECC_vli_bytesToNative(unsigned int *native, const uint8_t *bytes,
 			    int num_bytes);
 
+int uECC_compute_public_key_with_ed25519(const uint8_t *private_key, uint8_t *public_key);				
+
 #ifdef __cplusplus
 }
 #endif

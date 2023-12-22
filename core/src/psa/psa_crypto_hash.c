@@ -161,7 +161,7 @@ psa_status_t iotex_psa_hash_setup(
 #endif
 #if defined(IOTEX_PSA_BUILTIN_ALG_SHA_512)
         case PSA_ALG_SHA_512:
-           iotex_sha512_init( &operation->ctx.sha512 );
+            iotex_sha512_init( &operation->ctx.sha512 );
             ret = iotex_sha512_starts( &operation->ctx.sha512, 0 );
             break;
 #endif

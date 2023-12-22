@@ -2493,7 +2493,7 @@
  *
  * This module adds support for SHA-512.
  */
-//#define IOTEX_SHA512_C
+#define IOTEX_SHA512_C
 
 /**
  * \def IOTEX_SHA512_USE_A64_CRYPTO_IF_PRESENT

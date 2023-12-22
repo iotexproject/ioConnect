@@ -51,10 +51,11 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+#include <string.h>
 
 #include "include/backends/tinycryt/ecc.h"
 #include "include/backends/tinycryt/ecc_platform_specific.h"
-#include <string.h>
+#include "include/backends/tinycryt/ge.h"
 
 /* IMPORTANT: Make sure a cryptographically-secure PRNG is set and the platform
  * has access to enough entropy in order to feed the PRNG regularly. */
@@ -1146,6 +1147,16 @@ int uECC_compute_public_key(const uint8_t *private_key, uint8_t *public_key,
 	public_key +
 	curve->num_bytes, curve->num_bytes, _public + curve->num_words);
 	return 1;
+}
+
+int uECC_compute_public_key_with_ed25519(const uint8_t *private_key, uint8_t *public_key)
+{
+	ge_p3 A;
+
+    ge_scalarmult_base(&A, private_key);
+    ge_p3_tobytes(public_key, &A);
+
+	return 0;	
 }
 
 

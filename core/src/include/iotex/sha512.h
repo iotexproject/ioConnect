@@ -26,12 +26,16 @@ extern "C" {
  */
 typedef struct iotex_sha512_context
 {
+#ifdef PSA_CRYPTO_BACKENDS_MBEDTLS    
     uint64_t total[2];          /*!< The number of Bytes processed. */
     uint64_t state[8];          /*!< The intermediate digest state. */
     unsigned char buffer[128];  /*!< The data block being processed. */
 #if defined(IOTEX_SHA384_C)
     int is384;                  /*!< Determines which function to use:
                                                       0: Use SHA-512, or 1: Use SHA-384. */
+#endif
+#else
+    void *sha512_ctx;
 #endif
 }
 iotex_sha512_context;

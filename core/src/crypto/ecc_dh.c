@@ -54,11 +54,14 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+#include <string.h>
+
 #include "include/backends/tinycryt/constants.h"
 #include "include/backends/tinycryt/ecc.h"
 #include "include/backends/tinycryt/ecc_dh.h"
 #include "include/backends/tinycryt/utils.h"
-#include <string.h>
+#include "include/backends/tinycryt/sha512.h"
+#include "include/backends/tinycryt/ge.h"
 
 int uECC_make_key_with_d(uint8_t *public_key, uint8_t *private_key,
 			 unsigned int *d, uECC_Curve curve)
@@ -136,6 +139,31 @@ int uECC_make_key(uint8_t *public_key, uint8_t *private_key, uECC_Curve curve)
 	return 0;
 }
 
+int uECC_make_key_with_ed25519(uint8_t *public_key, uint8_t *private_key)
+{
+	uECC_word_t _random[NUM_ECC_WORDS * 4];
+	uECC_word_t tries;
+	ge_p3 A;
+
+	/* Generating _private uniformly at random: */
+	uECC_RNG_Function rng_function = uECC_get_rng();
+	if (!rng_function ||
+		!rng_function((uint8_t *)_random, NUM_ECC_WORDS * uECC_WORD_SIZE)) {
+			return -1;
+	}
+
+	tc_sha512(_random, 32, private_key);	
+
+	private_key[0] 	&= 248;
+    private_key[31] &= 63;
+    private_key[31] |= 64;
+
+    ge_scalarmult_base(&A, private_key);
+    ge_p3_tobytes(public_key, &A);
+
+	return 0;	
+}
+
 int uECC_shared_secret(const uint8_t *public_key, const uint8_t *private_key,
 		       uint8_t *secret, uECC_Curve curve)
 {
@@ -190,3 +218,5 @@ clear_and_out:
 
 	return r;
 }
+
+

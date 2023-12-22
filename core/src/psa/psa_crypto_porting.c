@@ -63,9 +63,11 @@
 
 #include "include/backends/tinycryt/constants.h"
 #include "include/backends/tinycryt/sha256.h"
+#include "include/backends/tinycryt/sha512.h"
 #include "include/backends/tinycryt/ecc.h"
 #include "include/backends/tinycryt/ecc_dh.h"
 #include "include/backends/tinycryt/ecc_dsa.h"
+#include "include/backends/tinycryt/ed_dsa.h"
 #include "include/backends/tinycryt/ecc_platform_specific.h"
 #include "include/backends/tinycryt/aes.h"
 #include "include/backends/tinycryt/hmac_prng.h"
@@ -528,6 +530,13 @@ inline void iotex_sha512_init( iotex_sha512_context *ctx )
 #ifdef PSA_CRYPTO_BACKENDS_MBEDTLS
     mbedtls_sha512_init( (mbedtls_sha512_context *)ctx );
 #endif
+
+#ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
+    ctx->sha512_ctx = malloc(sizeof(struct tc_sha256_state_struct));
+
+    if(ctx->sha512_ctx)
+        (void)tc_sha256_init((TCSha256State_t)ctx->sha512_ctx);
+#endif
 }
 
 inline void iotex_sha512_free( iotex_sha512_context *ctx )
@@ -535,12 +544,31 @@ inline void iotex_sha512_free( iotex_sha512_context *ctx )
 #ifdef PSA_CRYPTO_BACKENDS_MBEDTLS
     mbedtls_sha512_free( (mbedtls_sha512_context *)ctx );
 #endif
+
+#ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
+    if(ctx->sha512_ctx)
+    {
+        free(ctx->sha512_ctx);
+        ctx->sha512_ctx = NULL;
+    }        
+#endif
 }
 
 inline void iotex_sha512_clone( iotex_sha512_context *dst, const iotex_sha512_context *src )
 {
 #ifdef PSA_CRYPTO_BACKENDS_MBEDTLS
     mbedtls_sha512_clone( (mbedtls_sha512_context *)dst, (const mbedtls_sha512_context *)src );
+#endif
+
+#ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
+	if (NULL == dst->sha512_ctx)
+		iotex_sha512_init(dst);
+
+    memcpy(dst, src, sizeof(iotex_sha512_context));
+    // Deep clone the sha256 context, which is dynamically allocated
+    // Otherwise, when aborting the source operation, the sha256 context of the destination will be freed.
+    dst->sha512_ctx = malloc(sizeof(struct tc_sha512_state_struct));
+    memcpy(dst->sha512_ctx, src->sha512_ctx, sizeof(struct tc_sha512_state_struct));
 #endif
 }
 
@@ -557,7 +585,11 @@ inline int iotex_sha512_update( iotex_sha512_context *ctx, const unsigned char *
 {
 #ifdef PSA_CRYPTO_BACKENDS_MBEDTLS
     return mbedtls_sha512_update( (mbedtls_sha512_context *)ctx, input, ilen );
-#else
+#endif
+
+#ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
+    (void)tc_sha512_update ((TCSha256State_t)ctx->sha512_ctx, input, ilen);
+
     return 0;
 #endif
 }
@@ -566,8 +598,12 @@ inline int iotex_sha512_finish( iotex_sha512_context *ctx, unsigned char *output
 {
 #ifdef PSA_CRYPTO_BACKENDS_MBEDTLS
     return mbedtls_sha512_finish( (mbedtls_sha512_context *)ctx, output );
-#else
-	return 0;
+#endif
+
+#ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
+    (void)tc_sha512_final(output, (TCSha256State_t)ctx->sha512_ctx);
+
+    return 0;
 #endif
 }
 
@@ -575,8 +611,10 @@ inline int iotex_sha512( const unsigned char *input, size_t ilen, unsigned char 
 {
 #ifdef PSA_CRYPTO_BACKENDS_MBEDTLS
     return mbedtls_sha512( input, ilen, output, is384 );
-#else
-	return 0;
+#endif
+
+#ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
+    return tc_sha512(input, ilen, output);
 #endif
 }
 
@@ -1912,6 +1950,7 @@ inline void iotex_mpi_free( iotex_mpi *X )
 /* ECP */
 /****************************************************************/
 static uint8_t public[2 * NUM_ECC_BYTES];
+static uint8_t EdPublic[NUM_ECC_BYTES];
 
 inline void iotex_ecp_keypair_init( iotex_ecp_keypair *key )
 {
@@ -2025,13 +2064,24 @@ inline int iotex_ecp_point_write_binary( const iotex_ecp_group *grp,
 #ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
 inline int iotex_ecp_gen_key( psa_key_type_t type, uint8_t *key_buffer, size_t key_buffer_size )
 {
-    if(key_buffer == NULL || key_buffer_size != 32)
+    uECC_Curve curve;
+
+    if(key_buffer == NULL)
         return 1;
 
-    uECC_Curve curve = uECC_secp256r1();
-  
-    if( type == PSA_ECC_FAMILY_SECP_K1 )
+    switch (type)
+    {
+    case PSA_ECC_FAMILY_TWISTED_EDWARDS:
+        return uECC_make_key_with_ed25519(EdPublic, key_buffer);
+    case PSA_ECC_FAMILY_SECP_R1:
+        curve = uECC_secp256r1();
+        break;
+    case PSA_ECC_FAMILY_SECP_K1:
         curve = uECC_secp256k1();
+        break;
+    default:
+        break;
+    }
 
     uECC_make_key(public, key_buffer, curve);
 
@@ -2041,10 +2091,23 @@ inline int iotex_ecp_gen_key( psa_key_type_t type, uint8_t *key_buffer, size_t k
 
 inline int iotex_ecp_calc_pub_key( psa_key_type_t type, uint8_t *key_buffer, size_t key_buffer_size )
 {
-	uECC_Curve curve = uECC_secp256r1();
+    uECC_Curve curve;
 
-    if( type == PSA_ECC_FAMILY_SECP_K1 ) {
+    if(key_buffer == NULL)
+        return 1;
+
+    switch (type)
+    {
+    case PSA_ECC_FAMILY_TWISTED_EDWARDS:
+        return uECC_compute_public_key_with_ed25519(key_buffer, EdPublic);
+    case PSA_ECC_FAMILY_SECP_R1:
+        curve = uECC_secp256r1();
+        break;
+    case PSA_ECC_FAMILY_SECP_K1:
         curve = uECC_secp256k1();
+        break;
+    default:
+        break;
     }
 
     uECC_compute_public_key(key_buffer, public, curve);
@@ -2054,12 +2117,28 @@ inline int iotex_ecp_calc_pub_key( psa_key_type_t type, uint8_t *key_buffer, siz
 
 inline int iotex_psa_ecp_export_key_from_raw_data(psa_key_type_t type, const uint8_t *key_buffer, uint8_t *data, size_t *data_length )
 {
-	uECC_Curve curve = uECC_secp256r1();
-    
-    if( type == PSA_ECC_FAMILY_SECP_K1 ) {
-        curve = uECC_secp256k1();
-    }
+    uECC_Curve curve;
 
+    if(key_buffer == NULL)
+        return 1;
+
+    switch (type)
+    {
+    case PSA_ECC_FAMILY_TWISTED_EDWARDS:
+        uECC_compute_public_key_with_ed25519(key_buffer, data);
+        *data_length = 32;
+
+        return 0;
+    case PSA_ECC_FAMILY_SECP_R1:
+        curve = uECC_secp256r1();
+        break;
+    case PSA_ECC_FAMILY_SECP_K1:
+        curve = uECC_secp256k1();
+        break;
+    default:
+        break;
+    }
+    
     uECC_compute_public_key(key_buffer, data, curve);
     *data_length = 64;
 
@@ -2109,14 +2188,6 @@ inline int iotex_ecdsa_sign( psa_key_type_t type,
 
     uECC_set_rng(&default_CSPRNG);
 
-#if 0
-    if( type == PSA_ECC_FAMILY_SECP_R1 )
-        curve = uECC_secp256r1();
-    else if( type == PSA_ECC_FAMILY_SECP_K1 )
-        curve = uECC_secp256r1();
-    else
-        return 1;
-#else
     switch( type )
     {
         case PSA_ECC_FAMILY_SECP_R1:
@@ -2132,7 +2203,6 @@ inline int iotex_ecdsa_sign( psa_key_type_t type,
         default:
             return 1;
     }
-#endif
 
     ret = uECC_sign(key_buffer, hash, hash_length, signature, curve);
     if ( ret )
@@ -2142,6 +2212,28 @@ inline int iotex_ecdsa_sign( psa_key_type_t type,
 
     return PSA_SUCCESS;
 }
+
+int iotex_eddsa_sign( psa_key_type_t type, 
+                            const uint8_t *key_buffer, size_t key_buffer_size, 
+                            const uint8_t *hash, size_t hash_length, uint8_t *signature, size_t *signature_length )
+{
+    int ret = 0;
+
+    uECC_set_rng(&default_CSPRNG);
+
+    if (EdPublic[0])
+        ret = uECC_ed25519_sign(key_buffer, EdPublic, hash, hash_length, signature);
+    else
+        ret = 0;
+
+    if ( ret )
+        *signature_length = 64;
+    else
+        return PSA_ERROR_GENERIC_ERROR;
+
+    return PSA_SUCCESS;
+}
+
 
 inline int iotex_ecdsa_verify( psa_key_type_t type,
                           const uint8_t *key_buffer, size_t key_buffer_size,
@@ -2177,6 +2269,23 @@ inline int iotex_ecdsa_verify( psa_key_type_t type,
     uECC_compute_public_key(key_buffer, public_key, curve);
 
     ret = uECC_verify(public_key, hash, hash_length, signature, curve);
+
+    if ( 0 == ret )
+        return PSA_ERROR_GENERIC_ERROR;
+
+    return PSA_SUCCESS;
+}
+
+int iotex_eddsa_verify( psa_key_type_t type,
+                          const uint8_t *key_buffer, size_t key_buffer_size,
+                          const uint8_t *hash, size_t hash_length, uint8_t *signature, size_t signature_length )
+{
+    int ret;
+
+    if (EdPublic[0])
+        ret = uECC_ed25519_verify(EdPublic, hash, hash_length, signature);
+    else
+        ret = 0;
 
     if ( 0 == ret )
         return PSA_ERROR_GENERIC_ERROR;
