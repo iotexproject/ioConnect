@@ -1,9 +1,16 @@
 #ifndef __IOTEX_DEVICECONNECT_PAL_SPROUT_CONFIG__
 #define __IOTEX_DEVICECONNECT_PAL_SPROUT_CONFIG__
 
-#define IOTEX_SPROUT_HOST "sprout-staging.w3bstream.com"
-#define IOTEX_SPROUT_PORT 9000
-#define IOTEX_SPROUT_PATH "/message"
+#define SPROUT_COMMUNICATE_TYPE_NORMAL      1
+#define SPROUT_COMMUNICATE_TYPE_DID         2
+
+#define IOTEX_SPROUT_COMMUNICATE_TYPE       SPROUT_COMMUNICATE_TYPE_DID
+
+#define IOTEX_SPROUT_HTTP_HOST              "sprout-staging.w3bstream.com"
+#define IOTEX_SPROUT_HTTP_PORT              9000
+#define IOTEX_SPROUT_HTTP_TIMEOUT           3000
+#define IOTEX_SPROUT_HTTP_PATH_MESSAGE      "/message"
+#define IOTEX_SPROUT_HTTP_PATH_CREDENTIAL   "/sign_credential"
 
 #endif
 
