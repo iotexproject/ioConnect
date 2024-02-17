@@ -1,3 +1,3 @@
-# deviceconnect-sdk
+# ioConnect-sdk
 
 An embedded SDK for connecting smart devices to Web3
