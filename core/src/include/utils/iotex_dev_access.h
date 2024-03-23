@@ -7,7 +7,7 @@
 #include <time.h>
 
 #include "include/utils/cJSON/cJSON.h"
-#include "include/utils/base64/base64.h"
+#include "include/utils/baseX/base64.h"
 #include "include/utils/keccak256/keccak256.h"
 #include "include/utils/ProtoBuf/pb_common.h"
 #include "include/utils/ProtoBuf/pb_decode.h"

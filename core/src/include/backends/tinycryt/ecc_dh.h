@@ -92,6 +92,7 @@ extern "C" {
  * uECC_set_rng()) before calling uECC_make_key().
  */
 int uECC_make_key(uint8_t *p_public_key, uint8_t *p_private_key, uECC_Curve curve);
+int uECC_make_key_with_ed25519(uint8_t *public_key, uint8_t *private_key);	
 
 #ifdef ENABLE_TESTS
 
@@ -123,8 +124,6 @@ int uECC_make_key_with_d(uint8_t *p_public_key, uint8_t *p_private_key,
  */
 int uECC_shared_secret(const uint8_t *p_public_key, const uint8_t *p_private_key,
 		       uint8_t *p_secret, uECC_Curve curve);
-
-int uECC_make_key_with_ed25519(uint8_t *public_key, uint8_t *private_key);			   
 
 #ifdef __cplusplus
 }

@@ -5,6 +5,8 @@
 #include "include/utils/iotex_dev_access.h"
 #include "include/utils/LowerS/LowerS.h"
 
+#include "include/jose/jose.h"
+#include "include/dids/dids.h"
 
 #ifdef ARDUINO
 #include "DeviceConnect_PAL.h"

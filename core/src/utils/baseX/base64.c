@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <string.h>
 
-//base64 编码转换表，共64个
 static const char base64_encode_table[] = {
     'A','B','C','D','E','F','G','H','I','J',
     'K','L','M','N','O','P','Q','R','S','T',
@@ -46,7 +45,7 @@ int base64_encode(const char *indata, int inlen, char *outdata, int *outlen)
     if(indata == NULL || inlen <= 0) {
         return -1;
     }
-    //方法二：
+    
     int i, j;
     unsigned char num = inlen % 3;
     if(outdata != NULL) {
@@ -118,4 +117,147 @@ int base64_decode(const char *indata, int inlen, char *outdata, int *outlen)
         *outlen = len;
     }
     return 0;
+}
+
+int base64url_encode(const char *indata, int inlen, char *outdata, int *outlen)
+{
+    int equals_sign = 0;
+    int ret = 0;
+    
+    ret = base64_encode(indata, inlen, outdata, outlen);
+    if (ret)
+        return ret;
+
+    for (int i = 0; i < *outlen; i++) {
+        if (outdata[i] == '+') {
+            outdata[i] = '-';
+        } else if (outdata[i] == '/') {
+            outdata[i] = '_';
+        } else if (outdata[i] == '=') {
+            outdata[i] = 0;
+            equals_sign++; 
+        }
+    }
+
+    *outlen -= equals_sign;
+
+    return 0;    
+}
+
+
+int base64url_decode(const char *indata, int inlen, char *outdata, int *outlen)
+{
+    int ret = 0;
+    char *inbuf = NULL;
+    
+    inbuf = malloc(inlen + 3);
+    if (!inbuf)
+        return -1;
+
+    memset(inbuf, 0, inlen + 3);
+
+    for (int i = 0; i < inlen; i++) {
+        if (indata[i] == '-') {
+            inbuf[i] = '+';
+        } else if (indata[i] == '_') {
+            inbuf[i] = '/';
+        } else {
+            inbuf[i] = indata[i];
+        }        
+    }
+
+    switch ( inlen % 4 ) {
+    case 0:
+        break;
+    case 2:
+
+        inbuf[inlen]     = '=';
+        inbuf[inlen + 1] = '=';
+        inlen += 2;
+
+        break;
+    case 3:
+
+        inbuf[inlen] = '=';
+        inlen += 1;
+
+        break;            
+    default:
+        return -2;
+    }
+
+    ret = base64_decode(inbuf, inlen, outdata, outlen);
+    if (inbuf)
+        free(inbuf);
+    
+    return ret;
+}
+
+char * base64url_malloc(unsigned int *len)
+{
+    unsigned int actual_len = 0;
+
+    if (0 == *len)
+        return NULL;
+    
+    switch (*len % 3)
+    {
+    case 0:
+        
+        actual_len = (*len / 3) + 1;
+
+        break;
+    case 1:
+        
+        actual_len = (*len / 3) + 3;
+
+        break;
+    case 2:
+        
+        actual_len = (*len / 3) + 2;
+
+        break;                
+    default:
+        break;
+    }
+
+    if (0 == actual_len)
+        return NULL;
+
+    char *temp = malloc(actual_len);
+    *len = actual_len;
+
+    return temp;        
+}
+
+unsigned int base64EncodeGetLength( unsigned int size )
+{
+    /*
+     * output 4 bytes for every 3 input:
+     *                1        2        3
+     * 1 = --111111 = 111111--
+     * 2 = --11XXXX = ------11 XXXX----
+     * 3 = --1111XX =          ----1111 XX------
+     * 4 = --111111 =                   --111111
+     */
+
+    return (((size + 3 - 1) / 3) * 4) + 1; /*plus terminator*/
+}
+
+char *base64_encode_automatic( unsigned char *buf, size_t buf_len )
+{
+    char *encode = NULL;
+    size_t encoded_len = 0;  
+
+    if (NULL == buf || 0 == buf_len)
+        return NULL;
+
+    encoded_len = base64EncodeGetLength(buf_len);
+    encode = malloc(encoded_len);
+    if (NULL == encode)
+        return NULL;
+    memset(encode, 0, encoded_len);
+    base64url_encode(buf, buf_len, encode, &encoded_len); 
+
+    return encode;   
 }

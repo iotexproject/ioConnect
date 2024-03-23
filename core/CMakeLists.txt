@@ -24,6 +24,7 @@ if(ESP_PLATFORM)
 							"src/crypto/ed_dsa.c"
 							"src/crypto/sc.c"
 							"src/psa/cipher_wrap.c"
+							"src/psa/psa_crypto_aead.c"
 							"src/psa/psa_crypto_cipher.c"
 							"src/psa/psa_crypto_client.c"
 							"src/psa/psa_crypto_driver_wrappers.c"
@@ -47,20 +48,30 @@ if(ESP_PLATFORM)
 							"src/utils/ProtoBuf/pb_common.c"
 							"src/utils/ProtoBuf/pb_decode.c"
 							"src/utils/ProtoBuf/pb_encode.c"
-							"src/utils/base64/base64.c"
+							"src/utils/baseX/base64.c"
+							"src/utils/baseX/base58.c"
 							"src/utils/LowerS/LowerS.c"
 							"src/hal/flash/flash_common.c"
 							"src/hal/flash/soc/esp32/flash.c"
 							"src/hal/nvs/nvs_common.c"
 							"src/hal/nvs/soc/esp32/nvs_esp32.c"
+							"src/dids/did/did.c"
+							"src/dids/did/did_key.c"
+							"src/dids/did/did_io.c"
+							"src/jose/jwk.c"
+							"src/jose/jws.c"
+							"src/jose/jwe.c"
+							"src/jose/jwt.c"
+							"src/dids/didcomm/message.c"
+							"src/dids/didcomm/from_prior.c"
+							"src/dids/vc/vc.c"
                     INCLUDE_DIRS "." 
-							"src" "src/include" 
-							"src/include/utils" "src/include/backends" 
+							"src" 
 							"${ESP_IDF_PATH}/components/nvs_flash/include" 
-							"${ESP_IDF_PATH}/components/esp_partition/include"
-                    REQUIRES mbedtls)
+							"${ESP_IDF_PATH}/components/esp_partition/include")
 
-	target_compile_options(${COMPONENT_LIB} PRIVATE "-Wno-format")  
+	target_compile_options(${COMPONENT_LIB} PRIVATE "-Wno-format")
+  
 	return()
 endif()
 

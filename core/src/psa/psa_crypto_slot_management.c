@@ -381,7 +381,6 @@ psa_status_t psa_get_and_lock_key_slot( iotex_svc_key_id_t key,
     if( status == PSA_ERROR_DOES_NOT_EXIST )
         status = psa_load_persistent_key_into_slot( *p_slot );
 #endif /* defined(IOTEX_PSA_CRYPTO_STORAGE_C) */
-
     if( status != PSA_SUCCESS )
     {
         psa_wipe_key_slot( *p_slot );

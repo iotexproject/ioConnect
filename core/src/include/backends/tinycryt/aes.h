@@ -61,9 +61,25 @@ extern "C" {
 #define TC_AES_BLOCK_SIZE (Nb*Nk)
 #define TC_AES_KEY_SIZE (Nb*Nk)
 
+#if 0
 typedef struct tc_aes_key_sched_struct {
 	unsigned int words[Nb*(Nr+1)];
 } *TCAesKeySched_t;
+#else
+typedef struct tc_aes_key_sched_struct {
+	unsigned int words[Nb * (14 + 1)];
+	unsigned char nk;
+	unsigned char nr;
+} *TCAesKeySched_t;
+#endif
+
+enum tc_aes_key_sched_mode {
+	TC_AES_128,
+	TC_AES_192,
+	TC_AES_256,
+};
+
+int tc_aes_key_sched_init(TCAesKeySched_t s, enum tc_aes_key_sched_mode mode);
 
 /**
  *  @brief Set AES-128 encryption key
@@ -77,7 +93,7 @@ typedef struct tc_aes_key_sched_struct {
  *  @param      k IN -- points to the AES key
  */
 int tc_aes128_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k);
-
+int tc_aes_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k);
 /**
  *  @brief AES-128 Encryption procedure
  *  Encrypts contents of in buffer into out buffer under key;
@@ -108,6 +124,7 @@ int tc_aes_encrypt(uint8_t *out, const uint8_t *in,
  *  @param k  IN -- points to the AES key
  */
 int tc_aes128_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k);
+int tc_aes_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k);
 
 /**
  *  @brief AES-128 Encryption procedure

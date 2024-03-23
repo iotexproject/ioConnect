@@ -67,6 +67,32 @@ static inline unsigned int rotword(unsigned int a)
 #define subbyte(a, o)(sbox[((a) >> (o))&0xff] << (o))
 #define subword(a)(subbyte(a, 24)|subbyte(a, 16)|subbyte(a, 8)|subbyte(a, 0))
 
+int tc_aes_key_sched_init(TCAesKeySched_t s, enum tc_aes_key_sched_mode mode)
+{
+	if (NULL == s)
+		return TC_CRYPTO_FAIL;
+
+	switch (mode)
+	{
+	case TC_AES_128:
+		s->nk = 4;
+		s->nr = 10;
+		break;
+	case TC_AES_192:
+		s->nk = 6;
+		s->nr = 12;
+		break;
+	case TC_AES_256:
+		s->nk = 8;
+		s->nr = 14;
+		break;			
+	default:
+		return TC_CRYPTO_FAIL;
+	}
+
+	return TC_CRYPTO_SUCCESS;
+}
+
 int tc_aes128_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k)
 {
 	const unsigned int rconst[11] = {
@@ -93,6 +119,42 @@ int tc_aes128_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k)
 			t = subword(rotword(t)) ^ rconst[i/Nk];
 		}
 		s->words[i] = s->words[i-Nk] ^ t;
+	}
+
+	return TC_CRYPTO_SUCCESS;
+}
+
+int tc_aes_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k)
+{
+	const uint32_t rconst[15]= {
+  		0x01000000, 0x02000000, 0x04000000, 0x08000000,
+		0x10000000, 0x20000000, 0x40000000, 0x80000000, 
+		0x1B000000, 0x36000000, 0x6C000000, 0xD8000000,
+		0xAB000000, 0x4D000000, 0x9A000000
+	};
+	unsigned int i;
+	unsigned int t;
+
+	if (s == (TCAesKeySched_t) 0) {
+		return TC_CRYPTO_FAIL;
+	} else if (k == (const uint8_t *) 0) {
+		return TC_CRYPTO_FAIL;
+	}
+
+	if (s->nk == 0 || s->nr == 0)
+		return TC_CRYPTO_FAIL;
+
+	for (i = 0; i < s->nk; ++i) {
+		s->words[i] = (k[Nb*i]<<24) | (k[Nb*i+1]<<16) |
+			      (k[Nb*i+2]<<8) | (k[Nb*i+3]);
+	}
+
+	for (; i < (Nb * (s->nr + 1)); ++i) {
+		t = s->words[i-1];
+		if ((i % s->nk) == 0) {
+			t = subword(rotword(t)) ^ rconst[i/s->nk];
+		}
+		s->words[i] = s->words[i - s->nk] ^ t;
 	}
 
 	return TC_CRYPTO_SUCCESS;
@@ -168,10 +230,17 @@ int tc_aes_encrypt(uint8_t *out, const uint8_t *in, const TCAesKeySched_t s)
 		return TC_CRYPTO_FAIL;
 	}
 
+	if (s->nk == 0 || s->nr == 0)
+		return TC_CRYPTO_FAIL;
+
 	(void)_copy(state, sizeof(state), in, sizeof(state));
 	add_round_key(state, s->words);
 
+#if 0
 	for (i = 0; i < (Nr - 1); ++i) {
+#else
+	for (i = 0; i < (s->nr - 1); ++i) {
+#endif		
 		sub_bytes(state);
 		shift_rows(state);
 		mix_columns(state);

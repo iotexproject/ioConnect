@@ -239,7 +239,7 @@ psa_status_t psa_its_remove( psa_storage_uid_t uid )
 
     if( its_nvs->erase_all( handle ) != 0 )
         return( PSA_ERROR_STORAGE_FAILURE );
-
+    
     its_nvs->close(handle);
     return( PSA_SUCCESS );
 }

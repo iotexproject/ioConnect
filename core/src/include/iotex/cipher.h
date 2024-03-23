@@ -46,6 +46,27 @@
 extern "C" {
 #endif
 
+typedef enum
+{
+    IOTEX_CIPHER_PSA_KEY_UNSET = 0,
+    IOTEX_CIPHER_PSA_KEY_OWNED, /* Used for PSA-based cipher contexts which */
+                                  /* use raw key material internally imported */
+                                  /* as a volatile key, and which hence need  */
+                                  /* to destroy that key when the context is  */
+                                  /* freed.                                   */
+    IOTEX_CIPHER_PSA_KEY_NOT_OWNED, /* Used for PSA-based cipher contexts   */
+                                      /* which use a key provided by the      */
+                                      /* user, and which hence will not be    */
+                                      /* destroyed when the context is freed. */
+} iotex_cipher_psa_key_ownership;
+
+typedef struct
+{
+    unsigned int alg;
+    unsigned int slot;
+    iotex_cipher_psa_key_ownership slot_state;
+} iotex_cipher_context_psa;
+
 /**
  * \brief     Supported cipher types.
  *

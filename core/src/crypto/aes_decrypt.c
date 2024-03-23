@@ -65,6 +65,11 @@ int tc_aes128_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k)
 	return tc_aes128_set_encrypt_key(s, k);
 }
 
+int tc_aes_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k)
+{
+	return tc_aes_set_encrypt_key(s, k);
+}
+
 #define mult8(a)(_double_byte(_double_byte(_double_byte(a))))
 #define mult9(a)(mult8(a)^(a))
 #define multb(a)(mult8(a)^_double_byte(a)^(a))
@@ -140,9 +145,15 @@ int tc_aes_decrypt(uint8_t *out, const uint8_t *in, const TCAesKeySched_t s)
 		return TC_CRYPTO_FAIL;
 	}
 
-	(void)_copy(state, sizeof(state), in, sizeof(state));
+	if (s->nk == 0 || s->nr == 0)
+		return TC_CRYPTO_FAIL;
 
+	(void)_copy(state, sizeof(state), in, sizeof(state));
+#if 0
 	add_round_key(state, s->words + Nb*Nr);
+#else
+	add_round_key(state, s->words + Nb * s->nr);
+#endif
 
 	for (i = Nr - 1; i > 0; --i) {
 		inv_shift_rows(state);

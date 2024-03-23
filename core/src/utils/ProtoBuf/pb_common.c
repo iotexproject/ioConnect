@@ -3,11 +3,7 @@
  * 2014 Petteri Aimonen <jpa@kapsi.fi>
  */
 
-#ifdef ARDUINO
 #include "include/utils/ProtoBuf/pb_common.h"
-#else
-#include "ProtoBuf/pb_common.h"
-#endif
 
 static bool load_descriptor_values(pb_field_iter_t *iter)
 {

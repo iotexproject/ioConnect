@@ -9,13 +9,15 @@
 #ifndef BASE64_H
 #define BASE64_H
 
-//base64编码
+
 int base64_encode(const char *indata, int inlen, char *outdata, int *outlen);
-//base64解码
 int base64_decode(const char *indata, int inlen, char *outdata, int *outlen);
-//base64编码文件
-int base64_encode_file(const char *src, const char *dst);
-//base64解码文件
-int base64_decode_file(const char *src, const char *dst);
+
+int base64url_encode(const char *indata, int inlen, char *outdata, int *outlen);
+int base64url_decode(const char *indata, int inlen, char *outdata, int *outlen);
+
+char * base64url_malloc(unsigned int *len);
+
+char *base64_encode_automatic( unsigned char *buf, size_t buf_len );
 
 #endif // BASE64_H

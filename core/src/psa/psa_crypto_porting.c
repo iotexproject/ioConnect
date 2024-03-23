@@ -71,9 +71,89 @@
 #include "include/backends/tinycryt/ecc_platform_specific.h"
 #include "include/backends/tinycryt/aes.h"
 #include "include/backends/tinycryt/hmac_prng.h"
+#include "include/backends/tinycryt/hmac.h"
 #include "include/backends/tinycryt/ctr_mode.h"
+#include "include/backends/tinycryt/ccm_mode.h"
 
 #endif
+
+/****************************************************************/
+/* To prevent link errors */
+/****************************************************************/
+int iotex_ccm_update_ad( iotex_ccm_context *ctx,
+                           const unsigned char *ad,
+                           size_t ad_len )
+{
+    return 0;
+}
+
+int iotex_ccm_finish( iotex_ccm_context *ctx,
+                        unsigned char *tag, size_t tag_len )
+{
+    return 0;
+}
+
+psa_status_t iotex_psa_mac_verify_finish(
+    iotex_psa_mac_operation_t *operation,
+    const uint8_t *mac,
+    size_t mac_length )
+{
+    return 0;
+}
+
+psa_status_t iotex_psa_mac_abort(
+    iotex_psa_mac_operation_t *operation )
+{
+    return PSA_SUCCESS;
+}
+
+void iotex_ecp_group_init( iotex_ecp_group *grp )
+{
+
+}
+
+int iotex_mpi_sub_int( iotex_mpi *X, const iotex_mpi *A,
+                         iotex_mpi_sint b )
+{
+    return 0;
+}
+
+int iotex_mpi_lt_mpi_ct( const iotex_mpi *X, const iotex_mpi *Y,
+        unsigned *ret )
+{
+    return 0;
+}
+
+int iotex_mpi_add_int( iotex_mpi *X, const iotex_mpi *A,
+                         iotex_mpi_sint b )
+{
+    return 0;
+}
+
+int iotex_ecdh_get_params( iotex_ecdh_context *ctx,
+                             const iotex_ecp_keypair *key,
+                             iotex_ecdh_side side )
+{
+    return 0;
+}
+
+int iotex_ecdh_calc_secret( iotex_ecdh_context *ctx, size_t *olen,
+                      unsigned char *buf, size_t blen,
+                      int (*f_rng)(void *, unsigned char *, size_t),
+                      void *p_rng )
+{
+    return 0;
+}
+
+void iotex_ecdh_free( iotex_ecdh_context *ctx )
+{
+
+}
+
+void iotex_ecdh_init( iotex_ecdh_context *ctx )
+{
+    
+}
 
 /****************************************************************/
 /* Global data, support functions and library management */
@@ -86,7 +166,9 @@
 #define ECP_CURVE25519_KEY_SIZE 32
 #define ECP_CURVE448_KEY_SIZE   56
 
-struct tc_aes_key_sched_struct s;
+static struct tc_aes_key_sched_struct s;
+static struct tc_ccm_mode_struct c;
+static struct tc_hmac_state_struct hmac_ctx;
 
 /****************************************************************/
 /* Static */
@@ -709,6 +791,105 @@ inline int iotex_aes_cmac_prf_128( const unsigned char *key, size_t key_len,
 }
 #endif /* IOTEX_AES_C */
 
+psa_status_t iotex_psa_mac_compute( const psa_key_attributes_t *attributes,
+                            const uint8_t *key_buffer, size_t key_buffer_size, psa_algorithm_t alg,
+                            const uint8_t *input, size_t input_length,
+                            uint8_t *mac, size_t mac_size, size_t *mac_length)
+{
+    int ret = TC_CRYPTO_SUCCESS;
+
+    if ( NULL == key_buffer || 0 == key_buffer_size )
+        return( PSA_ERROR_INVALID_ARGUMENT );
+
+    if ( NULL == input || 0 == input_length )
+        return( PSA_ERROR_INVALID_ARGUMENT );    
+
+    if ( NULL == mac || 0 == mac_size || NULL == mac_length )
+        return( PSA_ERROR_INVALID_ARGUMENT ); 
+
+    if( ! PSA_ALG_IS_MAC( alg ) )
+        return( PSA_ERROR_INVALID_ARGUMENT );
+
+    uint32_t hash_alg =  PSA_ALG_HMAC_GET_HASH( alg );
+
+    if ( PSA_ALG_SHA_256 == hash_alg ) {
+    
+        tc_hmac_init(&hmac_ctx);
+        tc_hmac_set_key(&hmac_ctx, key_buffer, key_buffer_size);
+        tc_hmac_update(&hmac_ctx, input, input_length);
+        ret = tc_hmac_final(mac, mac_size, &hmac_ctx);
+        if ( TC_CRYPTO_SUCCESS == ret ) {
+            *mac_length = TC_SHA256_DIGEST_SIZE;
+            return PSA_SUCCESS;
+        } else    
+            return PSA_ERROR_COMMUNICATION_FAILURE;
+    }
+
+    return PSA_ERROR_NOT_SUPPORTED;
+}
+
+psa_status_t iotex_psa_mac_sign_setup( iotex_psa_mac_operation_t *operation,
+                        const psa_key_attributes_t *attributes,
+                        const uint8_t *key_buffer, size_t key_buffer_size, psa_algorithm_t alg)
+{
+    if ( NULL == key_buffer || 0 == key_buffer_size )
+        return ( PSA_ERROR_INVALID_ARGUMENT );
+
+    if( ! PSA_ALG_IS_MAC( alg ) )
+        return( PSA_ERROR_INVALID_ARGUMENT );
+
+    uint32_t hash_alg =  PSA_ALG_HMAC_GET_HASH( alg );  
+    if ( PSA_ALG_SHA_256 == hash_alg ) {
+        tc_hmac_init(&hmac_ctx);
+        tc_hmac_set_key(&hmac_ctx, key_buffer, key_buffer_size);
+
+        return PSA_SUCCESS;
+    }
+
+    return PSA_ERROR_NOT_SUPPORTED;
+}
+
+psa_status_t iotex_psa_mac_verify_setup( iotex_psa_mac_operation_t *operation,
+                        const psa_key_attributes_t *attributes,
+                        const uint8_t *key_buffer, size_t key_buffer_size, psa_algorithm_t alg)
+{
+    return iotex_psa_mac_sign_setup(operation, attributes, key_buffer, key_buffer_size, alg);        
+}
+
+psa_status_t iotex_psa_mac_update( iotex_psa_mac_operation_t *operation,
+                        const uint8_t *input, size_t input_length )
+{
+    int ret;
+
+    if ( NULL == input || 0 == input_length )
+        return PSA_ERROR_INVALID_ARGUMENT;
+
+    ret = tc_hmac_update(&hmac_ctx, input, input_length);
+    if ( TC_CRYPTO_SUCCESS == ret )
+        return PSA_SUCCESS;
+    else
+        return PSA_ERROR_COMMUNICATION_FAILURE;                
+}
+
+psa_status_t iotex_psa_mac_sign_finish( iotex_psa_mac_operation_t *operation,
+                    uint8_t *mac, size_t mac_size, size_t *mac_length )
+{
+    int ret;
+    
+    if ( NULL == mac || 0 == mac_size || NULL == mac_length )
+        return PSA_ERROR_INVALID_ARGUMENT;
+
+    *mac_length = 0;
+
+    ret = tc_hmac_final(mac, mac_size, &hmac_ctx);  
+    if ( TC_CRYPTO_SUCCESS == ret ) {
+        *mac_length = TC_SHA256_DIGEST_SIZE;
+        return PSA_SUCCESS;
+    } else {
+        return PSA_ERROR_COMMUNICATION_FAILURE;
+    }                  
+}
+
 /****************************************************************/
 /* CAMELLIA */
 /****************************************************************/
@@ -830,9 +1011,31 @@ void iotex_cipher_init( iotex_cipher_context_t *ctx )
     memset( ctx, 0, sizeof(iotex_cipher_context_t));
 }
 
-inline void iotex_cipher_free( iotex_cipher_context_t *ctx )
+void iotex_cipher_free( iotex_cipher_context_t *ctx )
 {
-    (void)ctx;
+    if( ctx == NULL )
+        return;
+
+    if( ctx->cipher_ctx != NULL )
+    {
+        iotex_cipher_context_psa * const cipher_psa =
+            (iotex_cipher_context_psa *) ctx->cipher_ctx;
+
+        if( cipher_psa->slot_state == IOTEX_CIPHER_PSA_KEY_OWNED )
+        {
+            (void) psa_destroy_key( cipher_psa->slot );
+        }
+
+        iotex_platform_zeroize( ctx->cipher_ctx, sizeof( *cipher_psa ) );
+        iotex_free( cipher_psa );
+    }
+
+    iotex_platform_zeroize( ctx, sizeof(iotex_cipher_context_t) );
+
+    if( ctx->cipher_ctx )
+        ctx->cipher_info->base->ctx_free_func( ctx->cipher_ctx );
+
+    iotex_platform_zeroize( ctx, sizeof(iotex_cipher_context_t) );           
 }
 
 inline int iotex_cipher_setup( iotex_cipher_context_t *ctx, const iotex_cipher_info_t *cipher_info )
@@ -1448,6 +1651,87 @@ inline int iotex_cipher_auth_decrypt_ext( iotex_cipher_context_t *ctx, const uns
 }
 #endif
 
+void iotex_ccm_init( iotex_ccm_context *ctx )
+{
+    memset( ctx, 0, sizeof( iotex_ccm_context ) );
+}
+
+void iotex_ccm_free( iotex_ccm_context *ctx )
+{
+    return;
+}
+
+int iotex_ccm_setkey( iotex_ccm_context *ctx, iotex_cipher_id_t cipher, const unsigned char *key, unsigned int keybits )
+{
+    int ret = IOTEX_ERR_ERROR_CORRUPTION_DETECTED;
+    const iotex_cipher_info_t *cipher_info;
+
+    cipher_info = iotex_cipher_info_from_values( cipher, keybits, IOTEX_MODE_ECB );
+    if( cipher_info == NULL )
+        return( IOTEX_ERR_CCM_BAD_INPUT );
+
+    if( cipher_info->block_size != 16 )
+        return( IOTEX_ERR_CCM_BAD_INPUT );
+
+    iotex_cipher_free( &ctx->cipher_ctx );
+
+    if( ( ret = iotex_cipher_setup( &ctx->cipher_ctx, cipher_info ) ) != 0 )
+        return( ret );
+
+    if( ( ret = iotex_cipher_setkey( &ctx->cipher_ctx, key, keybits, IOTEX_ENCRYPT ) ) != 0 )
+    {
+        return( ret );
+    }
+
+    return( 0 );
+}
+
+int iotex_ccm_encrypt_and_tag( iotex_ccm_context *ctx, size_t length, const unsigned char *iv, size_t iv_len, const unsigned char *ad, size_t ad_len,
+                         const unsigned char *input, unsigned char *output, unsigned char *tag, size_t tag_len )
+{
+    int ret = PSA_SUCCESS;
+
+    tc_ccm_config(&c, &s, iv, iv_len, tag_len); 
+
+    ret = tc_ccm_generation_encryption(output, length + tag_len, ad, ad_len, input, length, &c);  
+    if (TC_CRYPTO_FAIL == ret)
+        return ( PSA_ERROR_COMMUNICATION_FAILURE );
+    else
+        return ( PSA_SUCCESS );        
+}
+
+int iotex_ccm_auth_decrypt( iotex_ccm_context *ctx, size_t length,
+                      const unsigned char *iv, size_t iv_len,
+                      const unsigned char *ad, size_t ad_len,
+                      const unsigned char *input, unsigned char *output,
+                      const unsigned char *tag, size_t tag_len )
+{
+    int ret = PSA_SUCCESS;
+
+    tc_ccm_config(&c, &s, iv, iv_len, tag_len);
+
+    ret = tc_ccm_decryption_verification(output, length, ad, ad_len, input, length + tag_len, &c);
+    if (TC_CRYPTO_FAIL == ret)
+        return ( PSA_ERROR_COMMUNICATION_FAILURE );
+    else
+        return ( PSA_SUCCESS );
+}
+
+int iotex_ccm_set_lengths( iotex_ccm_context *ctx, size_t total_ad_len, size_t plaintext_len, size_t tag_len )
+{
+    return 0;
+}
+
+int iotex_ccm_starts( iotex_ccm_context *ctx, int mode, const unsigned char *iv, size_t iv_len )
+{
+    return 0;
+}
+
+int iotex_ccm_update( iotex_ccm_context *ctx, const unsigned char *input, size_t input_len, unsigned char *output, size_t output_size, size_t *output_len )
+{
+    return 0;
+}
+
 /****************************************************************/
 /* AES */
 /****************************************************************/
@@ -1467,16 +1751,36 @@ inline void iotex_aes_free( iotex_aes_context *ctx )
     iotex_platform_zeroize( ctx, sizeof( iotex_aes_context ) );
 }
 
-inline int iotex_aes_setkey_enc( iotex_aes_context *ctx, const unsigned char *key, unsigned int keybits )
+int iotex_aes_setkey_enc( iotex_aes_context *ctx, const unsigned char *key, unsigned int keybits )
 {
     int ret = 0;
 
+#if 0
     if ( keybits != 128 )
         return PSA_ERROR_NOT_SUPPORTED;
 
     ret = tc_aes128_set_encrypt_key(&s, key);
     if ( ret == 0 )
         return IOTEX_ERR_AES_INVALID_KEY_LENGTH;
+#else
+    switch (keybits)
+    {
+    case 128:
+        tc_aes_key_sched_init(&s, TC_AES_128);
+        break;
+    case 192:
+        tc_aes_key_sched_init(&s, TC_AES_192);
+        break;
+    case 256:
+        tc_aes_key_sched_init(&s, TC_AES_256);
+        break;             
+    default:
+        return PSA_ERROR_NOT_SUPPORTED;
+    }  
+    ret = tc_aes_set_encrypt_key(&s, key);
+    if ( TC_CRYPTO_FAIL == ret )
+        return IOTEX_ERR_AES_BAD_INPUT_DATA;      
+#endif
 
     return 0;
 }
@@ -1485,13 +1789,32 @@ inline int iotex_aes_setkey_dec( iotex_aes_context *ctx, const unsigned char *ke
 {
     int ret = 0;
 
+#if 0
     if ( keybits != 128 )
         return PSA_ERROR_NOT_SUPPORTED;
 
     ret = tc_aes128_set_decrypt_key(&s, key);
     if ( ret == 0 )
         return IOTEX_ERR_AES_INVALID_KEY_LENGTH;
-
+#else
+    switch (keybits)
+    {
+    case 128:
+        tc_aes_key_sched_init(&s, TC_AES_128);
+        break;
+    case 192:
+        tc_aes_key_sched_init(&s, TC_AES_192);
+        break;
+    case 256:
+        tc_aes_key_sched_init(&s, TC_AES_256);
+        break;             
+    default:
+        return PSA_ERROR_NOT_SUPPORTED;
+    }  
+    ret = tc_aes_set_decrypt_key(&s, key);
+    if ( TC_CRYPTO_FAIL == ret )
+        return IOTEX_ERR_AES_BAD_INPUT_DATA;  
+#endif
     return 0;    
 }
 
@@ -2295,6 +2618,32 @@ int iotex_eddsa_verify( psa_key_type_t type,
 
 #endif
 
+
+psa_status_t iotex_key_agreement_ecdh( uint32_t curve,
+                                        const uint8_t *key, size_t key_length, const uint8_t *peer_key, size_t peer_key_length,
+                                        uint8_t *shared_secret, size_t shared_secret_size, size_t *shared_secret_length)
+{
+    struct uECC_Curve_t * crv = uECC_secp256r1();
+    
+    switch (curve) {
+        case PSA_ECC_FAMILY_SECP_R1:
+            crv = uECC_secp256r1();
+            break;
+        case PSA_ECC_FAMILY_SECP_K1:
+            crv = uECC_secp256k1();
+            break;    
+        default:
+            return PSA_ERROR_NOT_SUPPORTED;
+    }
+    
+    if (!uECC_shared_secret(peer_key, key, shared_secret, crv)) {
+        return PSA_ERROR_CORRUPTION_DETECTED;
+    }
+
+    *shared_secret_length = NUM_ECC_BYTES;
+    
+    return PSA_SUCCESS;
+}
 
 /****************************************************************/
 /* Random generation */

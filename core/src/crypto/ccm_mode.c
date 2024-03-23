@@ -209,6 +209,7 @@ int tc_ccm_decryption_verification(uint8_t *out, unsigned int olen,
 	    (alen >= TC_CCM_AAD_MAX_BYTES) || /* associated data size unsupported */
 	    (plen >= TC_CCM_PAYLOAD_MAX_BYTES) || /* payload size unsupported */
 	    (olen < plen - c->mlen)) { /* invalid output buffer size */
+
 		return TC_CRYPTO_FAIL;
   }
 

@@ -28,7 +28,7 @@
 #include <windows.h>
 #endif
 
-#include "include/crypto/psa_crypto_its.h"
+#include "include/server/crypto/psa_crypto_its.h"
 
 #include <limits.h>
 #include <stdint.h>

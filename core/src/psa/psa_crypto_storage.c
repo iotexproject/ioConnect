@@ -33,7 +33,7 @@
 #endif
 
 #if defined(IOTEX_PLATFORM_C)
-#include "include/include/iotex/platform.h"
+#include "include/iotex/platform.h"
 #else
 #include <stdlib.h>
 #define iotex_calloc   calloc

@@ -1769,7 +1769,7 @@
  * This module enables the AES-CCM ciphersuites, if other requisites are
  * enabled as well.
  */
-//#define IOTEX_CCM_C
+#define IOTEX_CCM_C
 
 /**
  * \def IOTEX_CHACHA20_C
