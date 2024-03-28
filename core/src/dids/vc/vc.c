@@ -1,516 +1,457 @@
 #include <stdlib.h>
 #include <stddef.h>
+
 #include "include/dids/vc/vc.h"
 #include "include/utils/cJSON/cJSON.h"
 
-static Credential credentials[DID_VC_NUM_MAX] = {0};
-
-VCHandle iotex_vc_new(void)
+typedef struct _vc_json_serialize_info 
 {
-    for (int i = 0; i < DID_VC_NUM_MAX; i++) {
-        if (0 == credentials[i].Contexts.num) {
-            credentials[i].Contexts.context[0] = IOTEX_CREDENTIALS_V1_CONTEXT;
-            credentials[i].Contexts.num = 1;
-            return i;
-        }
-    }
+    vc_handle_t handle;
+    VerifiableCredential *vc;
+};
 
-    return -1;
+static struct _vc_json_serialize_info g_vc_info = {0};
+static char *ProofSuiteType_str[] = { "DataIntegrityProof", "Ed25519Signature2020", "Ed25519Signature2018",
+                                        "EcdsaSecp256k1Signature2019", "EcdsaSecp256r1Signature2019", "RsaSignature2018", "JsonWebSignature2020"};
+static char *DataIntegrityCryptoSuite_str[] = { "eddsa-2022", "json-eddsa-2022", "ecdsa-2019", "jcs-ecdsa-2019"};                                        
+
+char *iotex_get_proof_suite_type_string(enum ProofSuiteType type)
+{
+    if (type >= ProofSuiteTypeMax)
+        return NULL;
+
+    return ProofSuiteType_str[type];
 }
 
-int iotex_vc_add_context(VCHandle handle, char *context)
+char *iotex_get_data_intergrity_cryptosuite_string(enum DataIntegrityCryptoSuite type)
 {
-    if (NULL == context)
-        return -1;
+    if (type >= DataIntegrityCryptoSuiteMax)
+        return NULL;
 
-    if (handle >= DID_VC_NUM_MAX)
-        return -1;
-
-    if (credentials[handle].Contexts.num >= DID_VC_CONTEXT_NUM_MAX)
-        return -2;
-
-    credentials[handle].Contexts.context[credentials[handle].Contexts.num] = context;
-    credentials[handle].Contexts.num++;
-
-    return 0;
+    return DataIntegrityCryptoSuite_str[type];
 }
 
-int iotex_vc_add_id(VCHandle handle, char *id)
+vc_handle_t iotex_vc_new(void)
 {
-    if (NULL == id)
-        return -1;
+    if (g_vc_info.vc)
+         iotex_vc_destroy(g_vc_info.handle);
 
-    if (handle >= DID_VC_NUM_MAX)
-        return -1;
+    g_vc_info.vc = malloc(sizeof(VerifiableCredential));
+    if (NULL == g_vc_info.vc)
+        return (vc_handle_t)0;
 
-    if (credentials[handle].id)
-        return -2;
-
-    credentials[handle].id = id;
-
-    return 0;
-
-}
-
-int iotex_vc_update_id(VCHandle handle, char *id, int isfree)
-{
-    if (NULL == id)
-        return -1;
-
-    if (handle >= DID_VC_NUM_MAX)
-        return -1;
-
-    if (credentials[handle].id && isfree)
-        free(credentials[handle].id);
-
-    credentials[handle].id = id;
-
-    return 0;
-
-}
-
-int iotex_vc_add_type(VCHandle handle, char *type)
-{
-    if (NULL == type)
-        return -1;
-
-    if (handle >= DID_VC_NUM_MAX)
-        return -1;
-
-    if (credentials[handle].types.num >= DID_VC_TYPE_NUM_MAX)
-        return -2;
-
-    credentials[handle].types.type[credentials[handle].types.num] = type;
-    credentials[handle].types.num++;
-
-    return 0;
-}
-
-int iotex_vc_add_issuer(VCHandle handle, char *issuer)
-{
-    if (NULL == issuer)
-        return -1;
-
-    if (handle >= DID_VC_NUM_MAX)
-        return -1;
-
-    if (credentials[handle].issuer.id)
-        return -2;
-
-    credentials[handle].issuer.id = issuer;
-
-    return 0;
-
-}
-
-int iotex_vc_update_issuer(VCHandle handle, char *issuer, int isfree)
-{
-    if (NULL == issuer)
-        return -1;
-
-    if (handle >= DID_VC_NUM_MAX)
-        return -1;
-
-    if (credentials[handle].issuer.id && isfree)
-        free(credentials[handle].issuer.id);
-
-    credentials[handle].issuer.id = issuer;
-
-    return 0;
-
-}
-
-int iotex_vc_add_issuance_date(VCHandle handle, char *issuance_date)
-{
-    if (NULL == issuance_date)
-        return -1;
-
-    if (handle >= DID_VC_NUM_MAX)
-        return -1;
-
-    if (credentials[handle].issuance_date)
-        return -2;
-
-    credentials[handle].issuance_date = issuance_date;
-
-    return 0;
-
-}
-
-int iotex_vc_update_issuance_date(VCHandle handle, char *issuance_date, int isfree)
-{
-    if (NULL == issuance_date)
-        return -1;
-
-    if (handle >= DID_VC_NUM_MAX)
-        return -1;
-
-    if (credentials[handle].issuance_date && isfree)
-        free(credentials[handle].issuance_date);
-
-    credentials[handle].issuance_date = issuance_date;
-
-    return 0;
-
-}
-
-int iotex_vc_add_credential_subjects(VCHandle handle, char *id)
-{
-    if (NULL == id)
-        return -1;
-
-    if (handle >= DID_VC_NUM_MAX)
-        return -1;
-
-    if (credentials[handle].credential_subjects.num >= DID_VC_CREDENTIALSUBJECT_NUM_MAX)
-        return -2;
-
-    credentials[handle].credential_subjects.vc[credentials[handle].credential_subjects.num].id = id;
-    credentials[handle].credential_subjects.num++;
-
-    return 0;
-}
-
-static did_vc_proof_destroy(VC_Proof *proof)
-{
-    if (NULL == proof)
-        return -1;
-
-    if (proof->context)
-        free(proof->context);
-
-    if (proof->proof_value)
-        free(proof->proof_value);
-
-    if (proof->challenge)
-        free(proof->challenge);
-
-    if (proof->creator)
-        free(proof->creator);
-
-    if (proof->verification_method)
-        free(proof->verification_method);
-
-    if (proof->created)
-        free(proof->created);
-
-    if (proof->domain)
-        free(proof->domain);
-
-    if (proof->nonce)
-        free(proof->nonce);
-
-    if (proof->jws)
-        free(proof->jws);        
-
-    memset(proof, 0, sizeof(VC_Proof));
-}
-
-static void did_vc_status_destroy(VC_Status *status)
-{
-    if (NULL == status)
-        return -1;
-
-    if (status->id) {
-        free(status->id);
-        status->id = NULL;
-    }
-
-    if (status->type) {
-        free(status->type);
-        status->type = NULL;
-    }
-}
-
-static void did_vc_termofuse_destroy(VC_TermOfUse *termofuse)
-{
-    if (NULL == termofuse)
-        return -1;
-
-    if (termofuse->id) {
-        free(termofuse->id);
-        termofuse->id = NULL;
-    }
-
-    if (termofuse->type) {
-        free(termofuse->type);
-        termofuse->type = NULL;
-    }
-}
-
-static void did_vc_types_destroy(VC_Types *types)
-{
-    if (NULL == types)
-        return -1;
-
-    if (types->num) {
-        for (int i = 0; i < DID_VC_TYPE_NUM_MAX; i++) {
-            if (types->type[i]) {
-                free(types->type[i]);
-                types->type[i] = NULL;
-            }
-        }
-    }
-}
-
-static void did_vc_evidence_destroy(VC_Evidence *evidence)
-{
-    if (NULL == evidence)
-        return -1;
-
-    if (evidence->id) {
-        free(evidence->id);
-        evidence->id = NULL;
-    }
-
-    did_vc_types_destroy(&evidence->types);
-}
-
-static void did_vc_schema_destroy(VC_Schema *schema)
-{
-    if (NULL == schema)
-        return -1;
-
-    if (schema->id) {
-        free(schema->id);
-        schema->id = NULL;
-    }
-
-   if (schema->type) {
-        free(schema->type);
-        schema->type = NULL;
-   }
-}
-
-void iotex_vc_destroy(VCHandle handle)
-{
-    if (handle >= DID_VC_NUM_MAX)
-        return -1;
-
-    if (credentials[handle].Contexts.num) {
-        for (int i = 0; i < DID_VC_CONTEXT_NUM_MAX; i++) {
-            if (credentials[handle].Contexts.context[i]) {
-                free(credentials[handle].Contexts.context[i]);
-                credentials[handle].Contexts.context[i] = NULL;
-            }
-        }
-
-        credentials[handle].Contexts.num = 0;
-    }
+    memset(g_vc_info.vc, 0, sizeof(VerifiableCredential));        
     
-    if (credentials[handle].id) {
-        free(credentials[handle].id);
-        credentials[handle].id = NULL;
-    }
+    return ++g_vc_info.handle;
+}
 
-    if (credentials[handle].types.num) {
-        for (int i = 0; i < DID_VC_TYPE_NUM_MAX; i++) {
-            if (credentials[handle].types.type[i]) {
-                free(credentials[handle].types.type[i]);
-                credentials[handle].types.type[i] = NULL;
-            }
-        }
+did_status_t iotex_vc_destroy(vc_handle_t handle)
+{
+    if (handle != g_vc_info.handle)
+        return DID_ERROR_INVALID_ARGUMENT;
 
-        credentials[handle].types.num = 0;
-    }
+    if (NULL == g_vc_info.vc)        
+        return DID_SUCCESS;
 
-    if (credentials[handle].credential_subjects.num) {
-        for (int i = 0; i < DID_VC_CREDENTIALSUBJECT_NUM_MAX; i++) {
-            if (credentials[handle].credential_subjects.vc[i].id) {
-                free(credentials[handle].credential_subjects.vc[i].id);
-                credentials[handle].credential_subjects.vc[i].id = NULL;
-            }
-        }
+    if (g_vc_info.vc->contests.contexts)
+        cJSON_Delete(g_vc_info.vc->contests.contexts);        
 
-        credentials[handle].credential_subjects.num = 0;
-    }
+    if (g_vc_info.vc->types.typs)
+        cJSON_Delete(g_vc_info.vc->types.typs);        
 
-    if (credentials[handle].issuer.id) {
-        free(credentials[handle].issuer.id);
-        credentials[handle].issuer.id = NULL;
-    }
+    if (g_vc_info.vc->css.css)
+        cJSON_Delete(g_vc_info.vc->css.css);        
 
-    if (credentials[handle].issuance_date) {
-        free(credentials[handle].issuance_date);
-        credentials[handle].issuance_date = NULL;
-    }
+    if (g_vc_info.vc->issuer.issuer)
+        cJSON_Delete(g_vc_info.vc->issuer.issuer);        
 
-    if (credentials[handle].proofs.num) {
-        for (int i = 0; i < DID_VC_PROOFS_NUM_MAX; i++) {
-            did_vc_proof_destroy(&credentials[handle].proofs.proof[i]);            
-        }
+    if (g_vc_info.vc->proofs.proofs)
+        cJSON_Delete(g_vc_info.vc->proofs.proofs);        
 
-        credentials[handle].proofs.num = 0;
-    }
+    if (g_vc_info.vc->status.status)
+        cJSON_Delete(g_vc_info.vc->status.status);        
 
-    if (credentials[handle].expiration_date) {
-        free(credentials[handle].expiration_date);
-        credentials[handle].expiration_date = NULL;
-    }
+    if (g_vc_info.vc->terms_of_use.termsofuse)
+        cJSON_Delete(g_vc_info.vc->terms_of_use.termsofuse);        
 
-    did_vc_status_destroy(&credentials[handle].credential_status);
+    if (g_vc_info.vc->evidences.evidences)
+        cJSON_Delete(g_vc_info.vc->evidences.evidences);        
 
-    if (credentials[handle].terms_of_use.num) {
-        for (int i = 0; i < DID_VC_TERMOFUES_NUM_MAX; i++) {
-            did_vc_termofuse_destroy(&credentials[handle].terms_of_use.TermOfUse[i]);
-        }
+    if (g_vc_info.vc->schemas.schemas)
+        cJSON_Delete(g_vc_info.vc->schemas.schemas);        
 
-        credentials[handle].terms_of_use.num = 0;
-    }
+    if (g_vc_info.vc->refresh_services.rss)
+        cJSON_Delete(g_vc_info.vc->refresh_services.rss);        
 
-    if (credentials[handle].evidences.num) {
-        for (int i = 0; i < DID_VC_EVIDENCE_NUM_MAX; i++) {
-            did_vc_evidence_destroy(&credentials[handle].evidences.Evidence[i]);
-        }
+    if (g_vc_info.vc->property_set)
+        cJSON_Delete((cJSON *)g_vc_info.vc->property_set);
 
-        credentials[handle].evidences.num = 0;
-    }
+    memset(&g_vc_info.vc, 0, sizeof(VerifiableCredential));
 
-    if (credentials[handle].credential_schema.num) {
-        for (int i = 0; i < DID_VC_SCHEMA_NUM_MAX; i++) {
-            did_vc_schema_destroy(&credentials[handle].credential_schema.Schema[i]);
-        }
-
-        credentials[handle].credential_schema.num = 0;
-    }
-
-    if (credentials[handle].refresh_service.num) {
-        for (int i = 0; i < DID_VC_REFRESHSERVIDE_NUM_MAX; i++) {
-            if (credentials[handle].refresh_service.refreshservice[i].id) {
-                free(credentials[handle].refresh_service.refreshservice[i].id);
-                credentials[handle].refresh_service.refreshservice[i].id = NULL;
-            }
-
-            if (credentials[handle].refresh_service.refreshservice[i].type) {
-                free(credentials[handle].refresh_service.refreshservice[i].type);
-                credentials[handle].refresh_service.refreshservice[i].type = NULL;
-            }
-        }
-
-        credentials[handle].refresh_service.num = 0;
-    }
+    free(g_vc_info.vc);
+    g_vc_info.vc = NULL;         
 
 }
 
-char* iotex_vc_serialize(VCHandle handle)
+static did_status_t _vc_sub_property_set(cJSON *object, unsigned int subtype, char *name, void *value)
 {
-    cJSON *vc_root;
-    char *vc_out = NULL;
+    if (NULL == value)
+        return DID_ERROR_INVALID_ARGUMENT;
 
-    if (handle >= DID_VC_NUM_MAX)
+    if ((subtype & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_MASK) && (NULL == name))        
+        return DID_ERROR_INVALID_ARGUMENT;
+
+    switch (subtype) {
+        case IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_ID:
+            cJSON_AddStringToObject(object, "id", value);
+            break;
+        case IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_TYPE:
+            cJSON_AddStringToObject(object, "type", value);
+            break;
+        case IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_STRING:
+            cJSON_AddStringToObject(object, name, value);
+            break;
+        case IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_NUM:
+            cJSON_AddNumberToObject(object, name, *(double *)value);
+            break;
+        case IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_BOOL:
+            cJSON_AddBoolToObject(object, name, *(cJSON_bool *)value);
+            break;
+        case IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_JSON:
+            cJSON_AddItemToObject(object, name, (cJSON *)value);                             
+        default:
+            return DID_ERROR_INVALID_ARGUMENT;
+    }        
+
+    return DID_SUCCESS;
+}
+
+did_status_t iotex_vc_property_set(vc_handle_t handle, unsigned int build_type, char *name, void *value)
+{
+    did_status_t status = DID_SUCCESS;
+
+    if (g_vc_info.handle != handle || 0 == build_type || NULL == value)
+        return DID_ERROR_INVALID_ARGUMENT;
+
+    if (NULL == g_vc_info.vc)        
+        return DID_ERROR_BAD_STATE;
+
+    unsigned int main_type = (build_type & IOTEX_VC_BUILD_PROPERTY_MAIN_TYPE_MASK);                
+    unsigned int sub_type  = (build_type & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_MASK);
+
+    if ( main_type < IOTEX_VC_BUILD_PROPERTY_TYPE_MIN || main_type > IOTEX_VC_BUILD_PROPERTY_TYPE_MAX)
+        return DID_ERROR_INVALID_ARGUMENT;
+
+    switch (main_type) {
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_CONTEXT:
+            
+            if (NULL == g_vc_info.vc->contests.contexts) {
+                g_vc_info.vc->contests.contexts = cJSON_CreateArray();
+            }
+        
+            cJSON_AddItemToArray(g_vc_info.vc->contests.contexts, cJSON_CreateString(value));            
+
+            break;
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_ID:
+
+            if (strlen(value) >= IOTEX_VC_PROPERTY_ID_BUFFER_SIZE)
+                return DID_ERROR_BUFFER_TOO_SMALL;
+
+            if (g_vc_info.vc->id[0])
+                memset(g_vc_info.vc->id, 0, IOTEX_VC_PROPERTY_ID_BUFFER_SIZE);
+
+            strcpy(g_vc_info.vc->id, value);                
+            break;
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_TYPE:
+
+            if (NULL == g_vc_info.vc->types.typs)
+                g_vc_info.vc->types.typs = cJSON_CreateArray();
+
+            cJSON_AddItemToArray(g_vc_info.vc->types.typs, cJSON_CreateString(value));  
+
+            break;
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_CS:
+
+            if (NULL == g_vc_info.vc->css.css)
+                g_vc_info.vc->css.css = cJSON_CreateArray();
+
+            cJSON_AddItemToArray(g_vc_info.vc->css.css, (cJSON *)value);  
+
+            break;            
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_ISSUER:
+
+            if (0 == (sub_type & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_ISSUER_VALID_MASK))
+                return DID_ERROR_INVALID_ARGUMENT;         
+
+            if (NULL == g_vc_info.vc->issuer.issuer)
+                g_vc_info.vc->issuer.issuer = cJSON_CreateObject();
+
+            status = _vc_sub_property_set(g_vc_info.vc->issuer.issuer, sub_type, name, value);                
+            if (DID_SUCCESS != status)
+                return status;
+
+            break;
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_ISSUER_DATE:
+
+            if (strlen(value) >= IOTEX_VC_PROPERTY_ISSUANCE_DATE_BUFFER_SIZE)
+                return DID_ERROR_BUFFER_TOO_SMALL;
+
+            if (g_vc_info.vc->issuance_date[0])
+                memset(g_vc_info.vc->issuance_date, 0, IOTEX_VC_PROPERTY_ISSUANCE_DATE_BUFFER_SIZE);
+
+            strcpy(g_vc_info.vc->issuance_date, value);                
+            break;                        
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_PROOF:
+
+            if (NULL == g_vc_info.vc->proofs.proofs)
+                g_vc_info.vc->proofs.proofs = cJSON_CreateArray();
+
+            cJSON_AddItemToArray(g_vc_info.vc->proofs.proofs, (cJSON *)value);  
+
+            break;            
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_STATUS:
+
+            if (0 == (sub_type & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_STATUS_VALID_MASK))
+                return DID_ERROR_INVALID_ARGUMENT;        
+
+            if (NULL == g_vc_info.vc->status.status)
+                g_vc_info.vc->status.status = cJSON_CreateObject();
+
+            status = _vc_sub_property_set(g_vc_info.vc->status.status, sub_type, name, value);                
+            if (DID_SUCCESS != status)
+                return status;
+
+            break;  
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_TERMOFUSE:
+
+            if (NULL == g_vc_info.vc->terms_of_use.termsofuse)
+                g_vc_info.vc->terms_of_use.termsofuse = cJSON_CreateArray();
+
+            cJSON_AddItemToArray(g_vc_info.vc->terms_of_use.termsofuse, (cJSON *)value); 
+
+            break;            
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_EVIDENCE:
+
+            if (NULL == g_vc_info.vc->evidences.evidences)
+                g_vc_info.vc->evidences.evidences = cJSON_CreateArray();
+
+            cJSON_AddItemToArray(g_vc_info.vc->evidences.evidences, (cJSON *)value);                
+
+            break;            
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_SCHEMA:
+        
+            if (NULL == g_vc_info.vc->schemas.schemas)
+                g_vc_info.vc->schemas.schemas = cJSON_CreateArray();
+
+            cJSON_AddItemToArray(g_vc_info.vc->schemas.schemas, (cJSON *)value);                
+
+            break;
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_RS:
+
+            if (NULL == g_vc_info.vc->refresh_services.rss)
+                g_vc_info.vc->refresh_services.rss = cJSON_CreateArray();
+
+            cJSON_AddItemToArray(g_vc_info.vc->schemas.schemas, (cJSON *)value); 
+
+            break;
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_EXP:
+
+            if (strlen(value) >= IOTEX_VC_PROPERTY_EXP_DATE_BUFFER_SIZE)
+                return DID_ERROR_BUFFER_TOO_SMALL;
+
+            if (g_vc_info.vc->exp_date[0])
+                memset(g_vc_info.vc->exp_date, 0, IOTEX_VC_PROPERTY_EXP_DATE_BUFFER_SIZE);
+
+            strcpy(g_vc_info.vc->exp_date, value); 
+
+            break;                      
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_PROPERTY:
+
+            if (0 == (sub_type & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PROPERTY_VALID_MASK))
+                return DID_ERROR_INVALID_ARGUMENT;
+
+            if (NULL == g_vc_info.vc->property_set)
+                g_vc_info.vc->property_set = cJSON_CreateObject();
+
+            status = _vc_sub_property_set(g_vc_info.vc->property_set, sub_type, name, value);                
+            if (DID_SUCCESS != status)
+                return status;
+
+            break;                                                   
+        default:
+            return DID_ERROR_INVALID_ARGUMENT;
+    }
+
+    return DID_SUCCESS;        
+}
+
+property_handle_t iotex_vc_sub_property_new(void)
+{
+    return cJSON_CreateObject();
+}
+
+did_status_t iotex_vc_sub_property_destroy(property_handle_t handle)
+{
+    if (NULL == handle)
+        return DID_ERROR_INVALID_ARGUMENT;
+
+    cJSON_Delete(handle);
+
+    return DID_SUCCESS;        
+}
+
+did_status_t iotex_vc_sub_property_set(property_handle_t handle, unsigned int build_type, char *name, void *value)
+{
+    did_status_t status = DID_SUCCESS;
+
+    if (NULL == value || NULL == handle)
+        return DID_ERROR_INVALID_ARGUMENT;
+
+    unsigned int main_type = (build_type & IOTEX_VC_BUILD_PROPERTY_MAIN_TYPE_MASK);                
+    unsigned int sub_type  = (build_type & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_MASK);
+
+    if ( main_type < IOTEX_VC_BUILD_PROPERTY_TYPE_MIN || main_type > IOTEX_VC_BUILD_PROPERTY_TYPE_MAX)
+        return DID_ERROR_INVALID_ARGUMENT;
+
+    switch (main_type) {
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_CONTEXT:
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_ID:              
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_TYPE:
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_ISSUER:
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_STATUS:
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_EXP:
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_PROPERTY:                                
+            return DID_ERROR_INVALID_ARGUMENT;
+
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_CS:
+
+            if (0 == (sub_type & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_CS_VALID_MASK))
+                return DID_ERROR_INVALID_ARGUMENT;
+                                     
+            break;            
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_PROOF:
+
+            if (0 == (sub_type & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PROOF_VALID_MASK))
+                return DID_ERROR_INVALID_ARGUMENT;
+
+            break;            
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_TERMOFUSE:
+
+            if (0 == (sub_type & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_TERMOFUSE_VALID_MASK))
+                return DID_ERROR_INVALID_ARGUMENT;
+
+            break;            
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_EVIDENCE:
+
+            if (0 == (sub_type & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_EVIDENCE_VALID_MASK))
+                return DID_ERROR_INVALID_ARGUMENT;
+
+            break;              
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_SCHEMA:
+        
+            if (0 == (sub_type & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_SCHEMA_VALID_MASK))
+                return DID_ERROR_INVALID_ARGUMENT;
+
+            break;  
+        case IOTEX_VC_BUILD_PROPERTY_TYPE_RS:
+
+            if (0 == (sub_type & IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_RS_VALID_MASK))
+                return DID_ERROR_INVALID_ARGUMENT;
+
+            break;                                             
+        default:
+            return DID_ERROR_INVALID_ARGUMENT;
+    }       
+
+    return _vc_sub_property_set(handle, sub_type, name, value);
+}
+
+char *iotex_vc_serialize(vc_handle_t handle, bool format)
+{
+    char *vc_serialize = NULL;
+
+    if (g_vc_info.handle != handle)
         return NULL;
 
-    vc_root = cJSON_CreateObject();
-
-    if (1 == credentials[handle].Contexts.num) {
-        cJSON_AddStringToObject(vc_root, "@context", credentials[handle].Contexts.context[0]);
-    } else {
-        cJSON *contexts = cJSON_CreateArray();
-
-        for (int i = 0; i < credentials[handle].Contexts.num; i++) {
-            if (credentials[handle].Contexts.context[i])
-                cJSON_AddItemToArray(contexts, cJSON_CreateString(credentials[handle].Contexts.context[i]));
-        }
-
-        cJSON_AddItemToObject(vc_root, "@context", contexts);
-    }
-
-    if (credentials[handle].id)
-        cJSON_AddStringToObject(vc_root, "id", credentials[handle].id);
-
-    if (credentials[handle].types.num) {
-
-        cJSON *types = cJSON_CreateArray();
-
-        for (int i = 0; i < credentials[handle].types.num; i++) {
-            if (credentials[handle].types.type[i])
-                cJSON_AddItemToArray(types, cJSON_CreateString(credentials[handle].types.type[i]));
-        }
-
-        cJSON_AddItemToObject(vc_root, "type", types);        
-    }
-
-    if (credentials[handle].issuer.id)
-            cJSON_AddStringToObject(vc_root, "issuer", credentials[handle].issuer.id);
-
-    if (credentials[handle].issuance_date)
-            cJSON_AddStringToObject(vc_root, "issuanceDate", credentials[handle].issuance_date);
-
-    if (credentials[handle].credential_subjects.num) {
-
-        cJSON *credentialSubject = cJSON_CreateObject();
-        if (1 == credentials[handle].credential_subjects.num) {
-            cJSON_AddStringToObject(credentialSubject, "id", credentials[handle].credential_subjects.vc[0].id);            
-        }
-
-        cJSON_AddItemToObject(vc_root, "credentialSubject", credentialSubject);
-    }
-
-    vc_out = cJSON_Print(vc_root);
-
-    cJSON_Delete(vc_root);
-
-    return vc_out;
-}
-
-void *iotex_vc_json(VCHandle handle)
-{
-    cJSON *vc_root;
-    // char *vc_out = NULL;
-
-    if (handle >= DID_VC_NUM_MAX)
+    if (NULL == g_vc_info.vc)        
         return NULL;
 
-    vc_root = cJSON_CreateObject();
+    cJSON * vc_serialize_obj = cJSON_CreateObject();
+    if (NULL == vc_serialize_obj)
+        return NULL;
 
-    if (1 == credentials[handle].Contexts.num) {
-        cJSON_AddStringToObject(vc_root, "@context", credentials[handle].Contexts.context[0]);
-    } else {
-        cJSON *contexts = cJSON_CreateArray();
-
-        for (int i = 0; i < credentials[handle].Contexts.num; i++) {
-            if (credentials[handle].Contexts.context[i])
-                cJSON_AddItemToArray(contexts, cJSON_CreateString(credentials[handle].Contexts.context[i]));
-        }
-
-        cJSON_AddItemToObject(vc_root, "@context", contexts);
+    if (g_vc_info.vc->contests.contexts) {
+        cJSON_AddItemToObject(vc_serialize_obj, "@context", g_vc_info.vc->contests.contexts);       // TODO:
     }
 
-    if (credentials[handle].id)
-        cJSON_AddStringToObject(vc_root, "id", credentials[handle].id);
+    if (g_vc_info.vc->id[0]) {
+        cJSON_AddStringToObject(vc_serialize_obj, "id", g_vc_info.vc->id);
+    }        
 
-    if (credentials[handle].types.num) {
+    if (g_vc_info.vc->types.typs)
+        cJSON_AddItemToObject(vc_serialize_obj, "type", g_vc_info.vc->types.typs);        
 
-        cJSON *types = cJSON_CreateArray();
+    if (g_vc_info.vc->css.css)
+        cJSON_AddItemToObject(vc_serialize_obj, "credentialSubject", g_vc_info.vc->css.css);
 
-        for (int i = 0; i < credentials[handle].types.num; i++) {
-            if (credentials[handle].types.type[i])
-                cJSON_AddItemToArray(types, cJSON_CreateString(credentials[handle].types.type[i]));
+    if (g_vc_info.vc->issuer.issuer)
+        cJSON_AddItemToObject(vc_serialize_obj, "issuer", g_vc_info.vc->issuer.issuer);             // TODO:
+
+    if (g_vc_info.vc->issuance_date[0])
+        cJSON_AddStringToObject(vc_serialize_obj, "issuanceDate", g_vc_info.vc->issuance_date);         
+
+    if (g_vc_info.vc->proofs.proofs)
+        cJSON_AddItemToObject(vc_serialize_obj, "proof", g_vc_info.vc->proofs.proofs);              // TODO:         
+
+    if (g_vc_info.vc->exp_date[0])
+        cJSON_AddStringToObject(vc_serialize_obj, "expirationDate", g_vc_info.vc->id);
+
+    if (g_vc_info.vc->status.status)
+        cJSON_AddItemToObject(vc_serialize_obj, "credentialStatus", g_vc_info.vc->status.status);
+
+    if (g_vc_info.vc->terms_of_use.termsofuse)
+        cJSON_AddItemToObject(vc_serialize_obj, "termsOfUse", g_vc_info.vc->terms_of_use.termsofuse);
+
+    // https://www.w3.org/TR/2022/REC-vc-data-model-20220303/ Dont include this property.
+    // if (g_vc_info.vc->schemas.schemas)
+    //     cJSON_AddItemToObject(vc_serialize_obj, "termsOfUse", g_vc_info.vc->terms_of_use.termsofuse);
+
+    if (g_vc_info.vc->refresh_services.rss)
+        cJSON_AddItemToObject(vc_serialize_obj, "refreshService", g_vc_info.vc->refresh_services.rss);
+
+    if (g_vc_info.vc->property_set)
+        cJSON_AddItemToObject(vc_serialize_obj, "Property_set", g_vc_info.vc->property_set);
+
+    if (format)
+        vc_serialize = cJSON_Print(vc_serialize_obj);
+    else        
+        vc_serialize = cJSON_PrintUnformatted(vc_serialize_obj);
+    
+    cJSON_Delete(vc_serialize_obj);
+
+    return vc_serialize;        
+}   
+
+/*
+cJSON *root = cJSON_Parse(json_string);  // 假设这是你得到的 cJSON 结构体
+if (root != NULL && root->type == cJSON_Object) {
+    cJSON *child = root->child;  // 获取第一个子项
+    while (child != NULL) {
+        const char *key = child->string;  // 获取子项的 key 值
+        cJSON *value = child->value;  // 获取子项的 value
+
+        // 根据子项的类型进行处理，例如：
+        if (value->type == cJSON_String) {
+            const char *str_value = value->valuestring;  // 如果是字符串类型，获取其值
+            // 处理字符串类型的值
+        } else if (value->type == cJSON_Number) {
+            double num_value = value->valuedouble;  // 如果是数字类型，获取其值
+            // 处理数字类型的值
         }
+        // 其他类型的处理...
 
-        cJSON_AddItemToObject(vc_root, "type", types);        
+        child = child->next;  // 获取下一个子项
     }
-
-    if (credentials[handle].issuer.id)
-            cJSON_AddStringToObject(vc_root, "issuer", credentials[handle].issuer.id);
-
-    if (credentials[handle].issuance_date)
-            cJSON_AddStringToObject(vc_root, "issuanceDate", credentials[handle].issuance_date);
-
-    if (credentials[handle].credential_subjects.num) {
-
-        cJSON *credentialSubject = cJSON_CreateObject();
-        if (1 == credentials[handle].credential_subjects.num) {
-            cJSON_AddStringToObject(credentialSubject, "id", credentials[handle].credential_subjects.vc[0].id);            
-        }
-
-        cJSON_AddItemToObject(vc_root, "credentialSubject", credentialSubject);
-    }
-
-    // vc_out = cJSON_Print(vc_root);
-
-    // cJSON_Delete(vc_root); 
-
-    return vc_root;
 }
-
+cJSON_Delete(root);  // 释放 cJSON 结构体的内存
+*/

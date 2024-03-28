@@ -4,6 +4,7 @@
 #include <time.h>
 
 #include "include/jose/jwk.h"
+#include "include/dids/didcomm/encrypted.h"
 
 #define PLAINTEXT_TYP "application/didcomm-plain+json"
 
@@ -168,6 +169,7 @@ Message *message_set_attachment(Message *message, Attachment *attachment);
 
 char *didcomm_message_pack_plaintext(Message *message);
 char *didcomm_message_pack_signed(Message *message, char *sign_by, JWK *jwk);
+char *didcomm_message_pack_encrypted(Message *message, char *from, char *to, char *sign_by, PackEncryptedOptions *option, JWK *jwk);
 
 #endif 
 

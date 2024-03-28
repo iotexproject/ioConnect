@@ -114,29 +114,70 @@ exit:
     return ret;            
 }
 
-static char *_envelope_protectedheader_serialize(JweProtectedHeader *header)
+static char *_envelope_jwe_protectedheader_serialize(JweProtectedHeader *header)
 {
     char *output = NULL;
     cJSON *json_header = NULL;
-
+    
     if (NULL == header)
         return NULL;
-
+    
     if (NULL == header->typ)
         return NULL;        
-
+    
     json_header = cJSON_CreateObject();
 
     cJSON_AddStringToObject(json_header, "typ", header->typ);
 
     switch (header->alg) {
-        case ENVELOPE_EdDSA:
+        case EdDSA:
+    
             cJSON_AddStringToObject(json_header, "alg", "EdDSA");
             break;
-        case ENVELOPE_Es256:
+        case ES256:
+    
             cJSON_AddStringToObject(json_header, "alg", "Es256");
             break;
-        case ENVELOPE_Es256K:
+        case ES256K:
+    
+            cJSON_AddStringToObject(json_header, "alg", "Es256K");
+            break;           
+        default:
+    
+            cJSON_Delete(json_header);
+            return NULL;
+    }    
+
+    output = cJSON_Print(json_header);
+
+    cJSON_Delete(json_header);
+
+    return output;
+}
+
+static char *_envelope_jws_protectedheader_serialize(JWSProtectedHeader *header)
+{
+    char *output = NULL;
+    cJSON *json_header = NULL;
+    
+    if (NULL == header)
+        return NULL;
+    
+    if (0 == header->typ[0])
+        return NULL;        
+    
+    json_header = cJSON_CreateObject();
+
+    cJSON_AddStringToObject(json_header, "typ", header->typ);
+
+    switch (header->alg) {
+        case EdDSA:
+            cJSON_AddStringToObject(json_header, "alg", "EdDSA");
+            break;
+        case ES256:
+            cJSON_AddStringToObject(json_header, "alg", "Es256");
+            break;
+        case ES256K:
             cJSON_AddStringToObject(json_header, "alg", "Es256K");
             break;           
         default:
@@ -580,30 +621,32 @@ char *didcomm_message_pack_signed(Message *message, char *sign_by, JWK *jwk)
 
     unsigned char signature[64] = {0};
     unsigned int actual_len = 0;
-
+    
     if (NULL == sign_by || NULL == jwk)
         return NULL;
-
+    
     if (_validate_pack_signed(sign_by))
         return NULL;
-
+    
     payload = didcomm_message_pack_plaintext(message);
     if (NULL == payload)
         return NULL;
+    
     JWSProtectedHeader protectedheader;
     memset(&protectedheader, 0, sizeof(JWSProtectedHeader));
     memcpy(protectedheader.typ, JOSE_HEADER_TYPE_SIGN_TYPE, strlen(JOSE_HEADER_TYPE_SIGN_TYPE));
     
     if (jwk->type == JWKTYPE_EC) {
-        if (0 == strcmp(jwk->Params.ec.crv, "secp256k1")) {
+        if (0 == strcmp(jwk->Params.ec.crv, "secp256k1"))
             protectedheader.alg = ES256K;
-        }
+        else if (0 == strcmp(jwk->Params.ec.crv, "P-256"))
+            protectedheader.alg = ES256;
     }
 
-    char *header = _envelope_protectedheader_serialize(&protectedheader);
+    char *header = _envelope_jws_protectedheader_serialize(&protectedheader);
     if (NULL == header)
         return NULL;
- 
+
     base64url_header_len = base64EncodeGetLength(strlen(header));
     base64url_header = malloc(base64url_header_len);
     if (NULL == base64url_header)
@@ -659,7 +702,7 @@ char *didcomm_message_pack_signed(Message *message, char *sign_by, JWK *jwk)
     jws.payload = base64url_payload;
 
     msg = _envelope_jws_serialize(&jws);
-
+    
     return msg;
 }
 
@@ -667,7 +710,7 @@ static char *_authcrypt(char *msg, char *from, char *to, PackEncryptedOptions *o
 {
     enum KnownKeyAlg keyalg;
     char *auth_msg = NULL;
-
+    
     if (NULL == msg)
         return NULL;
     
@@ -676,7 +719,7 @@ static char *_authcrypt(char *msg, char *from, char *to, PackEncryptedOptions *o
     
     keyalg = iotex_jwk_get_key_alg(jwk);
     if (P256 == keyalg || K256 == keyalg) {
-    
+
         char * recipients[4] = {0};
 
         // TODO: 
@@ -691,7 +734,7 @@ static char *_authcrypt(char *msg, char *from, char *to, PackEncryptedOptions *o
 char *didcomm_message_pack_encrypted(Message *message, char *from, char *to, char *sign_by, PackEncryptedOptions *option, JWK *jwk)
 {
     char *msg = NULL, *encrypted_msg = NULL;
-
+    
     if (NULL == message)
         return NULL;
     
@@ -702,16 +745,13 @@ char *didcomm_message_pack_encrypted(Message *message, char *from, char *to, cha
         msg = didcomm_message_pack_signed(message, sign_by, jwk);
     else
         msg = didcomm_message_pack_plaintext(message);
-    
     if (NULL == msg)
         return NULL;             
     
-    if (from) {
+    if (from)
         encrypted_msg = _authcrypt(msg, from, to, option, jwk);
-    }
-    else {
-        // TODO: anoncrypt
-    }
+    // else 
+    //     // TODO: anoncrypt
 
     return encrypted_msg;                   
 }

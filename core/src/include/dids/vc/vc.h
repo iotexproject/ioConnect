@@ -1,220 +1,181 @@
-#ifndef __IOTEX_DID_VC__
-#define __IOTEX_DID_VC__
+#ifndef __IOTEX_VERIFIABLE_CREDENTIAL_H__
+#define __IOTEX_VERIFIABLE_CREDENTIAL_H__
 
 #include "include/dids/did/did.h"
-
-#ifndef DID_VC_CONTEXT_NUM_MAX
-#define DID_VC_CONTEXT_NUM_MAX      4
-#endif
-
-#ifndef DID_VC_TYPE_NUM_MAX
-#define DID_VC_TYPE_NUM_MAX         4
-#endif
-
-#ifndef DID_VC_CREDENTIALSUBJECT_NUM_MAX
-#define DID_VC_CREDENTIALSUBJECT_NUM_MAX         4
-#endif
-
-#ifndef DID_VC_PROOFS_NUM_MAX
-#define DID_VC_PROOFS_NUM_MAX       4
-#endif
-
-#ifndef DID_VC_TERMOFUES_NUM_MAX
-#define DID_VC_TERMOFUES_NUM_MAX    4
-#endif
-
-#ifndef DID_VC_EVIDENCE_NUM_MAX
-#define DID_VC_EVIDENCE_NUM_MAX     4
-#endif
-
-#ifndef DID_VC_SCHEMA_NUM_MAX
-#define DID_VC_SCHEMA_NUM_MAX       4
-#endif
-
-#ifndef DID_VC_REFRESHSERVIDE_NUM_MAX
-#define DID_VC_REFRESHSERVIDE_NUM_MAX       4
-#endif
-
-#ifndef DID_VC_NUM_MAX
-#define DID_VC_NUM_MAX              4
-#endif
-
-typedef enum VerificationRelationship ProofPurpose;
-typedef unsigned int VCHandle;
+#include "include/utils/cJSON/cJSON.h"
 
 #define IOTEX_CREDENTIALS_V1_CONTEXT "https://www.w3.org/2018/credentials/v1"
 
+typedef unsigned int vc_handle_t;
+typedef cJSON* property_handle_t;
+
+#define IOTEX_VC_PARSE_TO_OBJECT(x)     cJSON_Parse(x)  
+
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_CONTEXT            0x01000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_ID                 0x02000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_TYPE               0x03000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_CS                 0x04000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_ISSUER             0x05000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_ISSUER_DATE        0x06000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_PROOF              0x07000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_STATUS             0x08000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_TERMOFUSE          0x09000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_EVIDENCE           0x0a000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_SCHEMA             0x0b000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_RS                 0x0c000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_EXP                0x0d000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_PROPERTY           0x0e000000
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_MIN                (IOTEX_VC_BUILD_PROPERTY_TYPE_CONTEXT)
+#define IOTEX_VC_BUILD_PROPERTY_TYPE_MAX                (IOTEX_VC_BUILD_PROPERTY_TYPE_PROPERTY)
+
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_STRING         0x000001
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_NUM            0x000002
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_BOOL           0x000004
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_JSON           0x000008
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_ID                     0x000010
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_TYPE                   0x000020
+
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_MASK   0x000F
+#define IOTEX_VC_BUILD_PROPERTY_MAIN_TYPE_MASK          0xFF000000
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_MASK           0x00FFFFFF
+
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PROOF_VALID_MASK       (IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_MASK)
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_CS_VALID_MASK          (IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_ID | IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_MASK)
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_ISSUER_VALID_MASK      (IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_ID | IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_MASK)
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_EVIDENCE_VALID_MASK    (IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_ID | IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_MASK)
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_STATUS_VALID_MASK      (IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_ID | IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_TYPE | IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_MASK)
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_TERMOFUSE_VALID_MASK   (IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_ID | IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_TYPE | IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_MASK)
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_SCHEMA_VALID_MASK      (IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_ID | IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_TYPE | IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_MASK)
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_RS_VALID_MASK          (IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_ID | IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_TYPE | IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_MASK)
+#define IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PROPERTY_VALID_MASK    (IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_MASK)
+
+#define IOTEX_VC_PROOF_PROPERTY_CONTEXT_NAME                "@context"
+#define IOTEX_VC_PROOF_PROPERTY_PURPOSE_NAME                "proofPurpose"
+#define IOTEX_VC_PROOF_PROPERTY_VALUE_NAME                  "proofValue"
+#define IOTEX_VC_PROOF_PROPERTY_CHALLENGE_NAME              "challenge"
+#define IOTEX_VC_PROOF_PROPERTY_VERIFICATION_METHOD_NAME    "verificationMethod"
+#define IOTEX_VC_PROOF_PROPERTY_CREATED_NAME                "created"
+#define IOTEX_VC_PROOF_PROPERTY_EXPIRES_NAME                "expires"
+#define IOTEX_VC_PROOF_PROPERTY_DOMAIN_NAME                 "domain"
+#define IOTEX_VC_PROOF_PROPERTY_NONCE_NAME                  "nonce"
+#define IOTEX_VC_PROOF_PROPERTY_CRYPTOSUITE_NAME            "cryptosuite"
+
+#define IOTEX_VC_PROPERTY_ID_BUFFER_SIZE                64
+#define IOTEX_VC_PROPERTY_EXP_DATE_BUFFER_SIZE          64
+#define IOTEX_VC_PROPERTY_ISSUANCE_DATE_BUFFER_SIZE     32
+
 enum ProofSuiteType {
-    RsaSignature2018,                       // rename = "rsa"
-    Ed25519Signature2018,                   // rename = "ed25519"
-    Ed25519Signature2020,                   // rename = "ed25519"
-    DataIntegrityProof,
-    Ed25519BLAKE2BDigestSize20Base58CheckEncodedSignature2021,      // rename = "tezos"
-    P256BLAKE2BDigestSize20Base58CheckEncodedSignature2021,         // rename = "tezos"
-    EcdsaSecp256k1Signature2019,            // rename = "secp256k1"
-    EcdsaSecp256k1RecoverySignature2020,    // rename = "secp256k1"
-    Eip712Signature2021,                    // rename = "eip"
-    EthereumPersonalSignature2021,          // rename = "eip"
-    EthereumEip712Signature2021,            // rename = "eip"
-    TezosSignature2021,                     // rename = "tezos"
-    TezosJcsSignature2021,                  // rename = "tezos"
-    SolanaSignature2021,                    // rename = "solana"
-    AleoSignature2021,                      // rename = "aleo"
-    JsonWebSignature2020,                   // rename = "w3c"
-    EcdsaSecp256r1Signature2019,            // rename = "secp256r1"
-    CLSignature2019,
-    NonJwsProof,                         
-    AnonCredPresentationProofv1,            // rename = "ex:AnonCredPresentationProofv1"
-    AnonCredDerivedCredentialv1,            // rename = "ex:AnonCredPresentationProofv1"
+    DataIntegrityProof = 0,
+    Ed25519Signature2020,
+    Ed25519Signature2018,
+    EcdsaSecp256k1Signature2019,
+    EcdsaSecp256r1Signature2019,
+    RsaSignature2018,
+    JsonWebSignature2020,
+    ProofSuiteTypeMax,
 };
 
 enum DataIntegrityCryptoSuite {
-    Eddsa2022,          // rename = "eddsa-2022"
-    JcsEddsa2022,       // rename = "json-eddsa-2022"
-    Ecdsa2019,          // rename = "ecdsa-2019"
-    JcsEcdsa2019,       // rename = "jcs-ecdsa-2019"
+    Eddsa2022 = 0,                          // rename = "eddsa-2022"
+    JcsEddsa2022,                           // rename = "json-eddsa-2022"
+    Ecdsa2019,                              // rename = "ecdsa-2019"
+    JcsEcdsa2019,                           // rename = "jcs-ecdsa-2019"
+    DataIntegrityCryptoSuiteMax,
 };
 
-typedef struct {
-    unsigned int num;
-    char *context[DID_VC_CONTEXT_NUM_MAX];
+typedef struct _VC_Contexts {
+    cJSON *contexts;                // JSON_Arrary
 } VC_Contexts;
 
-typedef struct {
-    unsigned int num;
-    char *type[DID_VC_TYPE_NUM_MAX];
+typedef struct _VC_Types {
+    cJSON *typs;                    // JSON_Arrary
 } VC_Types;
 
-typedef struct {
-    char * id;              // skip if it is none
-    // TODO：MAP property_set <string, value>, skip if it is none
+typedef struct _VC_CredentialSubject {
+    cJSON *cs;                      // CredentialSubject : JSON_Object. SubType [vc_cs_id]
 } VC_CredentialSubject;
 
-typedef struct {
-    unsigned int num;
-    VC_CredentialSubject vc[DID_VC_CREDENTIALSUBJECT_NUM_MAX];
+typedef struct _VC_CredentialSubjects {
+    cJSON *css;                     // CredentialSubjects : JSON_Array.
 } VC_CredentialSubjects;
 
-typedef struct {
-    char * id;
-    // TODO：MAP property_set <string, value>, skip if it is none
+typedef struct _VC_Issuer {
+    cJSON *issuer;                  // JSON_Object. SubType [vc_issuer_id, vc_issuer_private]
 } VC_Issuer;
 
-typedef struct {
-    void *context;              // rename = "@context", skip if it's value is null;
-    enum ProofSuiteType type;   // rename = "type"
-    ProofPurpose proof_purpose; // skip if it is none
-    char *proof_value;          // skip if it is none
-    char *challenge;            // skip if it is none
-    char *creator;              // skip if it is none
-    char *verification_method;  // skip if it is none. Note: ld-proofs specifies verificationMethod as a "set of parameters", but all examples use a single string.
-    char *created;              // skip if it is none
-    char *domain;               // skip if it is none
-    char *nonce;                // skip if it is none
-    char *jws;                  // skip if it is none
-    enum DataIntegrityCryptoSuite cryptosuite;      // skip if it is none
-
-    // TODO：MAP property_set <string, value>, skip if it is none
-
+typedef struct _VC_Proof {
+    cJSON *proof;                   // JSON_Object. SubType [p_context, p_type, p_purpose, p_value, p_challenge, p_creator, p_verification_method
+                                    //                       p_created, p_domain, p_nonce, p_jws, p_cryptosuit, p_private ]
 } VC_Proof;
 
-typedef struct {
-    unsigned int num;
-    VC_Proof proof[DID_VC_PROOFS_NUM_MAX];    
+typedef struct _VC_Proofs {
+    cJSON *proofs;                  // JSON_Array.
 } VC_Proofs;
 
-typedef struct  {
-    char *id;
-    char *type;  // rename = "type"
-
-    // TODO：MAP property_set <string, value>, skip if it is none
-
+typedef struct _VC_Status {
+    cJSON *status;                  // JSON_Object. SubType [vc_status_id, vc_status_type, vc_status_private]
 } VC_Status;
 
-typedef struct  {
-    char *id;           // skip if it is none
-    char *type;         // rename = "type"
-
-    // TODO：MAP property_set <string, value>, skip if it is none
-
+typedef struct _VC_TermOfUse {
+    cJSON *termofuse;               // JSON_Object. SubType [vc_termofuse_id, vc_termofuse_type, vc_termofuse_private]
 } VC_TermOfUse;
 
-typedef struct {
-    unsigned int num;
-    VC_TermOfUse TermOfUse[DID_VC_TERMOFUES_NUM_MAX];    
+typedef struct _VC_TermsOfUse {
+    cJSON *termsofuse;              // JSON_Array.
 } VC_TermsOfUse;
 
-typedef struct  {
-    char *id;           // skip if it is none
-    VC_Types types;     // rename = "type"
-
-    // TODO：MAP property_set <string, value>, skip if it is none
-
+typedef struct _VC_Evidence {
+    cJSON *evidence;                // JSON_Object. SubType [vc_evidence_id, vc_evidence_type, vc_evidence_private]
 } VC_Evidence;
 
-typedef struct {
-    unsigned int num;
-    VC_Evidence Evidence[DID_VC_EVIDENCE_NUM_MAX];    
+typedef struct _VC_Evidences {
+    cJSON *evidences;               // JSON_Array.
 } VC_Evidences;
 
-typedef struct  {
-    char *id;
-    char *type;  // rename = "type"
-
-    // TODO：MAP property_set <string, value>
-
+typedef struct _VC_Schema {
+    cJSON *schema;                  // JSON_Object. SubType [vc_schema_id, vc_schema_type, vc_schema_private]
 } VC_Schema;
 
-typedef struct {
-    unsigned int num;
-    VC_Schema Schema[DID_VC_SCHEMA_NUM_MAX];    
+typedef struct _VC_Schemas {
+    cJSON *schemas;                 // JSON_Array.
 } VC_Schemas;
 
-typedef struct  {
-    char *id;
-    char *type;  // rename = "type"
-
-    // TODO：MAP property_set <string, value>
-
+typedef struct _VC_RefreshService {
+    cJSON *rs;                      // RefreshService : JSON_Object. SubType [vc_schema_id, vc_schema_type, vc_schema_private]
 } VC_RefreshService;
 
-typedef struct {
-    unsigned int num;
-    VC_RefreshService refreshservice[DID_VC_REFRESHSERVIDE_NUM_MAX];    
+typedef struct _VC_RefreshServices {
+    cJSON *rss;                     // RefreshServices : JSON_Array.
 } VC_RefreshServices;
 
-typedef struct {
-    VC_Contexts Contexts;                           // rename = "@context"
-    char* id;                                       // skip if it is none
-    VC_Types types;                                 // rename = "type"
-    VC_CredentialSubjects credential_subjects;
-    VC_Issuer issuer;                               // skip if it is none
-    char* issuance_date;                            // rename = "issuanceDate", skip if it is none
-    VC_Proofs proofs;                               // skip if it is none
-    char* expiration_date;                          // skip if it is none
-    VC_Status credential_status;                    // skip if it is none
-    VC_TermsOfUse terms_of_use;                     // skip if it is none
-    VC_Evidences evidences;                         // skip if it is none
-    VC_Schemas credential_schema;                   // skip if it is none
-    VC_RefreshServices refresh_service;             // skip if it is none
+typedef struct _VerifiableCredential {
+    VC_Contexts contests;
+    char id[IOTEX_VC_PROPERTY_ID_BUFFER_SIZE];
+    VC_Types types;
+    VC_CredentialSubjects css;
+    VC_Issuer issuer;
+    char issuance_date[IOTEX_VC_PROPERTY_ISSUANCE_DATE_BUFFER_SIZE];
+    VC_Proofs proofs;
+    char exp_date[IOTEX_VC_PROPERTY_EXP_DATE_BUFFER_SIZE];
+    VC_Status status;
+    VC_TermsOfUse terms_of_use;
+    VC_Evidences evidences;
+    VC_Schemas schemas;
+    VC_RefreshServices refresh_services;
+    void *property_set;                      // Property Set : JSON_Object
+} VerifiableCredential;
 
-    // TODO：MAP property_set <string, value>, skip if it is none
+vc_handle_t iotex_vc_new(void);
+did_status_t iotex_vc_destroy(vc_handle_t handle);
+did_status_t iotex_vc_property_set(vc_handle_t handle, unsigned int build_type, char *name, void *value);
 
-} Credential;
+property_handle_t iotex_vc_sub_property_new(void);
+did_status_t iotex_vc_sub_property_destroy(property_handle_t handle);
+did_status_t iotex_vc_sub_property_set(property_handle_t handle, unsigned int build_type, char *name, void *value);
 
-VCHandle iotex_vc_new(void);
-int iotex_vc_add_context(VCHandle handle, char *context);
-int iotex_vc_add_id(VCHandle handle, char *id);
-int iotex_vc_update_id(VCHandle handle, char *id, int isfree);
-int iotex_vc_add_type(VCHandle handle, char *type);
-int iotex_vc_add_issuer(VCHandle handle, char *issuer);
-int iotex_vc_update_issuer(VCHandle handle, char *issuer, int isfree);
-int iotex_vc_add_issuance_date(VCHandle handle, char *issuance_date);
-int iotex_vc_update_issuance_date(VCHandle handle, char *issuance_date, int isfree);
-int iotex_vc_add_credential_subjects(VCHandle handle, char *id);
+char *iotex_get_proof_suite_type_string(enum ProofSuiteType type);
+char *iotex_get_data_intergrity_cryptosuite_string(enum DataIntegrityCryptoSuite type);
 
-char* iotex_vc_serialize(VCHandle handle);
-void *iotex_vc_json(VCHandle handle);
-
+char *iotex_vc_serialize(vc_handle_t handle, bool format);
 
 #endif

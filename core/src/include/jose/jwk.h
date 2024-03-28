@@ -122,8 +122,8 @@ char *iotex_jwk_serialize(JWK *jwk, bool format);
 
 bool iotex_jwk_equals(JWK *jwk1, JWK *jwk2, bool skipPri);
 
-did_status_t iotex_jwk_get_pubkey_from_jwk(JWK *jwk, char *outdata, uint32_t *outdata_len);
-did_status_t iotex_pubkey_uncompress_convert_compress(const char *uncompress, char *compress);
+jose_status_t iotex_jwk_get_pubkey_from_jwk(JWK *jwk, char *outdata, uint32_t *outdata_len);
+jose_status_t iotex_pubkey_uncompress_convert_compress(const char *uncompress, char *compress);
 
 #endif
 

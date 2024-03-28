@@ -93,6 +93,7 @@ typedef struct _JWE {
 
 char *iotex_jwe_encrypt_plaintext(psa_key_id_t key_id, char *plaintext, size_t pLen, char *nonce, size_t nonce_len, char *ad, size_t ad_len, size_t *ciphertext_length);
 char *iotex_jwe_encrypt_protected(enum KWAlgorithms KwAlg, enum EncAlgorithm enAlg, char *sender, char *recipients_kid[4], JWK *epk);
+char *iotex_jwe_encrypt(char *plaintext, enum KWAlgorithms alg, enum EncAlgorithm enc, char *sender, JWK *sJWK, char * recipients[4]);
 
 // typedef const JWK *(*key_locator)(jwe_t *jwe, jwe_header_t *hdr, void *);
 

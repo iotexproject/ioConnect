@@ -28,8 +28,8 @@ static char *generate(JWK *jwk)
            
             int outlen = 0;
             
-            did_status_t status = iotex_jwk_get_pubkey_from_jwk(jwk, public_key, &outlen);
-            if (DID_SUCCESS != status)
+            jose_status_t status = iotex_jwk_get_pubkey_from_jwk(jwk, public_key, &outlen);
+            if (JOSE_SUCCESS != status)
                 return NULL;
 
             uint8_t hash[32] = {0};

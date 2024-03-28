@@ -81,7 +81,7 @@ JWK *iotex_jwk_to_public(JWK *jwk)
                     return NULL;
 
                 memcpy(jwk_public, jwk, sizeof(JWK));   
-                memset(jwk_public->Params.ec.ecc_private_key, 0, sizoef(jwk_public->Params.ec.ecc_private_key));
+                memset(jwk_public->Params.ec.ecc_private_key, 0, sizeof(jwk_public->Params.ec.ecc_private_key));
 
                 return jwk_public;
             } 
@@ -236,10 +236,10 @@ void iotex_jwk_destroy(JWK *jwk)
     free(jwk);
 }
 
-did_status_t iotex_pubkey_uncompress_convert_compress(const char *uncompress, char *compress)
+jose_status_t iotex_pubkey_uncompress_convert_compress(const char *uncompress, char *compress)
 {
     if (NULL == uncompress || NULL == compress)
-        return DID_ERROR_INVALID_ARGUMENT;
+        return JOSE_ERROR_INVALID_ARGUMENT;
 
     memcpy(compress + 1,  uncompress + 1, 32);
 
@@ -248,15 +248,15 @@ did_status_t iotex_pubkey_uncompress_convert_compress(const char *uncompress, ch
     } else 
         compress[0] = 0x03;
     
-    return DID_SUCCESS;
+    return JOSE_SUCCESS;
 }
 
-did_status_t iotex_jwk_get_pubkey_from_jwk(JWK *jwk, char *outdata, uint32_t *outdata_len)
+jose_status_t iotex_jwk_get_pubkey_from_jwk(JWK *jwk, char *outdata, uint32_t *outdata_len)
 {
     int x_outlen = 0, y_outlen = 0;;
 
     if (NULL == jwk || NULL == outdata || NULL == outdata_len)
-        return DID_ERROR_INVALID_ARGUMENT;
+        return JOSE_ERROR_INVALID_ARGUMENT;
 
     switch (jwk->type) {
         case JWKTYPE_EC:
@@ -267,19 +267,19 @@ did_status_t iotex_jwk_get_pubkey_from_jwk(JWK *jwk, char *outdata, uint32_t *ou
         
             *outdata_len = x_outlen + y_outlen + 1;
 
-            return DID_SUCCESS;
+            return JOSE_SUCCESS;
     
         default:
-            return DID_ERROR_NOT_SUPPORTED;
+            return JOSE_ERROR_NOT_SUPPORTED;
     }
 
-    return DID_ERROR_GENERIC_ERROR;
+    return JOSE_ERROR_GENERIC_ERROR;
 }
 
-static did_status_t _jwk_psa_key_attributes_set(psa_key_attributes_t *attributes, enum JWKSupportKeyAlg keyalg, int lifetime, unsigned int key_usage, unsigned int alg, unsigned int key_id)
+static jose_status_t _jwk_psa_key_attributes_set(psa_key_attributes_t *attributes, enum JWKSupportKeyAlg keyalg, int lifetime, unsigned int key_usage, unsigned int alg, unsigned int key_id)
 {
     if (NULL == attributes)
-        return DID_ERROR_INVALID_ARGUMENT;
+        return JOSE_ERROR_INVALID_ARGUMENT;
 
     psa_set_key_usage_flags(attributes, key_usage);
     psa_set_key_algorithm(attributes, alg);
@@ -306,6 +306,7 @@ JWK *iotex_jwk_generate(enum JWKType type, enum JWKSupportKeyAlg keyalg,
 {
     char exported[PSA_KEY_EXPORT_ECC_PUBLIC_KEY_MAX_SIZE(256)];
     size_t exported_length = 0;
+    JWK *jwk = NULL;
     
     psa_status_t status;
     psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
@@ -356,7 +357,7 @@ JWK *iotex_jwk_generate(enum JWKType type, enum JWKSupportKeyAlg keyalg,
 
 jwk_generater:
 
-    JWK *jwk = malloc(sizeof(JWK));
+    jwk = malloc(sizeof(JWK));
     if (NULL == jwk)
         return NULL;
     memset(jwk, 0, sizeof(JWK));
@@ -388,22 +389,22 @@ JWK* iotex_jwk_generate_by_secret(uint8_t *secret, unsigned int secret_size,
 
     psa_status_t status;
     psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
-
+    
     if (type != JWKTYPE_EC)
         return NULL;
-
+    
     if (NULL == secret || 0 == secret_size)
         return NULL;
-
+    
     if (secret_size != 32)        
         return NULL;
-
+    
     if (IOTEX_JWK_LIFETIME_VOLATILE != lifetime && IOTEX_JWK_LIFETIME_PERSISTENT != lifetime)
         return NULL;
     
     if (NULL == key_id)        
         return NULL;
-
+    
 #if 0
     psa_set_key_usage_flags(&attributes, key_usage);
     psa_set_key_algorithm(&attributes, alg);
@@ -427,17 +428,17 @@ JWK* iotex_jwk_generate_by_secret(uint8_t *secret, unsigned int secret_size,
     _jwk_psa_key_attributes_set(&attributes, keyalg, lifetime, key_usage, alg, *key_id);
 #endif
 
-    status = psa_import_key( &attributes, secret, 32, key_id );     
+    status = psa_import_key( &attributes, secret, 32, key_id );
     if( status != PSA_SUCCESS )
         return NULL;
-
-    status = psa_export_public_key( key_id, (uint8_t *)exported, sizeof(exported), &exported_length );   
+    
+    status = psa_export_public_key( *key_id, (uint8_t *)exported, sizeof(exported), &exported_length );   
     if( status != PSA_SUCCESS )
         return NULL;
 
     JWK *jwk = malloc(sizeof(JWK));
     if (NULL == jwk)
-        return NULL;
+        return NULL;        
     memset(jwk, 0, sizeof(JWK));        
 
     int x_len, y_len;

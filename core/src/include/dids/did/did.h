@@ -1,6 +1,7 @@
 #ifndef __IOTEX_DIDS_DID_H__
 #define __IOTEX_DIDS_DID_H__
 
+#include "include/dids/common.h"
 #include "include/jose/jwk.h"
 
 #define DIDS_CONTEXT_NUM_MAX            4

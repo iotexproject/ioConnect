@@ -6,6 +6,7 @@
 #include "include/dids/did/did.h"
 #include "include/dids/did/did_key.h"
 #include "include/utils/cJSON/cJSON.h"
+#include "include/utils/baseX/base58.h"
 
 static char did_str[128] = {0};
 
@@ -31,11 +32,11 @@ static char *generate(JWK *jwk)
             
             int outlen = 0;
             
-            did_status_t status = iotex_jwk_get_pubkey_from_jwk(jwk, internal_uncompress, &outlen);
-            if (DID_SUCCESS != status)
+            jose_status_t status = iotex_jwk_get_pubkey_from_jwk(jwk, internal_uncompress, &outlen);
+            if (JOSE_SUCCESS != status)
                 return NULL;
             status = iotex_pubkey_uncompress_convert_compress(internal_uncompress, internal_raw + 2);
-            if (DID_SUCCESS != status)
+            if (JOSE_SUCCESS != status)
                 return NULL;
             
             strcpy(did_str, "did:key:");

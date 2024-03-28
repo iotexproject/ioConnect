@@ -1316,10 +1316,9 @@ psa_status_t psa_export_public_key( psa_key_id_t key,
     if( status != PSA_SUCCESS )
         return( status );
 
-    if( ! PSA_KEY_TYPE_IS_ASYMMETRIC( slot->attr.type ) )
-    {
-         status = PSA_ERROR_INVALID_ARGUMENT;
-         goto exit;
+    if( ! PSA_KEY_TYPE_IS_ASYMMETRIC( slot->attr.type ) ) {
+        status = PSA_ERROR_INVALID_ARGUMENT;
+        goto exit;
     }
 
     psa_key_attributes_t attributes = {

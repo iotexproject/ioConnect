@@ -142,32 +142,31 @@ static char * _jwe_protectedheader_serialize(JweProtectedHeader *protected)
     return cJSON_Print(json_protected);
 }
 
-char *iotex_jwe_encrypt_plaintext(psa_key_id_t key_id, char *plaintext, size_t pLen,
-                                    char *nonce, size_t nonce_len, char *ad, size_t ad_len, size_t *ciphertext_length)
+char *iotex_jwe_encrypt_plaintext(psa_key_id_t key_id, char *plaintext, size_t pLen, char *nonce, size_t nonce_len, char *ad, size_t ad_len, size_t *ciphertext_length)
 {
     psa_status_t status;
-
+    
     if (NULL == plaintext || 0 == pLen) 
         return NULL;
-
+    
     if (NULL == nonce || 0 == nonce_len)
         return NULL;
-
+    
     if (NULL == ad || 0 == ad_len)
         return NULL;
-
+    
     if (nonce_len != PSA_AEAD_NONCE_LENGTH(PSA_KEY_TYPE_AES, PSA_ALG_CCM))
         return NULL;
-
+    
     char *ciphertext = malloc(pLen + PSA_AEAD_TAG_LENGTH(PSA_KEY_TYPE_AES, 256, PSA_ALG_CCM));
     if (NULL == ciphertext) {
         return NULL; 
     }               
-
+    
     status =  psa_aead_encrypt(key_id, PSA_ALG_CCM, nonce, nonce_len, ad, ad_len, plaintext, pLen, ciphertext, pLen + PSA_AEAD_TAG_LENGTH(PSA_KEY_TYPE_AES, 256, PSA_ALG_CCM), ciphertext_length);
     if (PSA_SUCCESS != status)
         return NULL;
-
+    
     return ciphertext;         
 }
 
@@ -181,7 +180,7 @@ char *iotex_jwe_encrypt_protected(enum KWAlgorithms KwAlg, enum EncAlgorithm enA
     apv = _fill_recipients_apv(recipients_kid);
     if (NULL == apv)
         return NULL;
-
+    
     apu = _fill_apu_from_sender(sender);
 
     JweProtectedHeader protected;
@@ -194,9 +193,10 @@ char *iotex_jwe_encrypt_protected(enum KWAlgorithms KwAlg, enum EncAlgorithm enA
     protected.epk = _did_jwk_json_generate(epk);          
 
     protected_json = _jwe_protectedheader_serialize(&protected);
-    if (protected_json) 
+    
+    if (protected_json)
         protected_base64 = base64_encode_automatic(protected_json, strlen(protected_json));
-
+            
 exit:
     if (apu)
         free(apu);
@@ -217,11 +217,14 @@ char * iotex_jwe_encrypt(char *plaintext, enum KWAlgorithms alg, enum EncAlgorit
     size_t clen = 0;
     JWK *epk = NULL;
     psa_key_id_t cekey_id, wrap_id, epk_id; 
-    
-    status =  psa_generate_random( cekey, sizeof(cekey) );
+
+    if (NULL == plaintext)
+        return NULL;
+
+    status = psa_generate_random( cekey, sizeof(cekey) );
     if (PSA_SUCCESS != status)
         return NULL;
-    
+
     psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
     psa_set_key_usage_flags(&attributes, PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
     psa_set_key_algorithm(&attributes, PSA_ALG_CCM);
@@ -232,23 +235,27 @@ char * iotex_jwe_encrypt(char *plaintext, enum KWAlgorithms alg, enum EncAlgorit
     status = psa_import_key( &attributes, cekey, 32, &cekey_id );
     if (PSA_SUCCESS != status)
         return NULL;          
-     
+
     epk = iotex_jwk_generate_by_secret(cekey, sizeof(cekey), JWKTYPE_EC, JWK_SUPPORT_KEY_ALG_P256,
                                         PSA_KEY_LIFETIME_VOLATILE,
                                         PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH | PSA_KEY_USAGE_EXPORT,
-                                        PSA_ALG_ECDSA(PSA_ALG_SHA_256), &epk_id);    
+                                        PSA_ALG_ECDSA(PSA_ALG_SHA_256), &epk_id);
+    if (NULL == epk)
+        return NULL;                                            
 
     char *protected = iotex_jwe_encrypt_protected(alg, enc, sender, recipients, epk);
+    if (NULL == protected)
+        return NULL;
 
     int nonce_length = PSA_AEAD_NONCE_LENGTH(PSA_KEY_TYPE_AES, PSA_ALG_CCM);
     status =  psa_generate_random( nonce, nonce_length );
     if (PSA_SUCCESS != status)
         return NULL;          
-    
+  
     char *ciphertext = iotex_jwe_encrypt_plaintext(cekey_id, plaintext, strlen(plaintext), nonce, nonce_length, protected, strlen(protected), &clen);
     if (NULL == ciphertext)
-        return -1;
-    
+        return NULL;
+
     char *cipher_base64url = base64_encode_automatic(ciphertext, strlen(plaintext));
     char *tag_base64url    = base64_encode_automatic(ciphertext + strlen(plaintext), clen - strlen(plaintext));
     char *iv_base64url     = base64_encode_automatic(nonce, nonce_length);
@@ -256,17 +263,14 @@ char * iotex_jwe_encrypt(char *plaintext, enum KWAlgorithms alg, enum EncAlgorit
     uint8_t recipient_key[ 2*32 ] = {0}, secret[32] = {0};
     size_t secret_len = 0;
 
-
 	uint8_t private[32] = {0};
-    if (!uECC_make_key(recipient_key, private, uECC_secp256r1())) {
-        printf("make key failed\n");
+    if (!uECC_make_key(recipient_key, private, uECC_secp256r1()))
         return NULL;
-    }
-
+    
     status = psa_raw_key_agreement(PSA_ALG_ECDH, 2, recipient_key, 64, secret, 32, &secret_len);
     if (PSA_SUCCESS != status)
         return NULL;   
-
+    
     char *wkey = malloc(32 + 16);
     size_t wkey_len = 0;
 
@@ -274,13 +278,13 @@ char * iotex_jwe_encrypt(char *plaintext, enum KWAlgorithms alg, enum EncAlgorit
     status = psa_import_key( &attributes, secret, 32, &wrap_id );  
     if (PSA_SUCCESS != status)
         return NULL;
-
+    
     status = psa_cipher_encrypt(wrap_id, PSA_ALG_CBC_NO_PADDING, cekey, 32, wkey, 32 + 16, &wkey_len);
     if (PSA_SUCCESS != status)
         return NULL;
     
     char *wkey_base64url = base64_encode_automatic(wkey, 32 + 16);
-  
+    
     Recipient recipient;
     recipient.header.kid = recipients[0];
     recipient.encrypted_key = wkey_base64url;

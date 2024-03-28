@@ -159,20 +159,20 @@ jws_handle_t iotex_jws_general_json_serialize_init(char *plaintext, size_t plain
     return ++g_jws_info.jws_json_handle;
 }
 
-did_status_t iotex_jws_general_json_serialize_update(jws_handle_t handle, enum JWAlogrithm alg, char *kid, JWK *jwk)
+jose_status_t iotex_jws_general_json_serialize_update(jws_handle_t handle, enum JWAlogrithm alg, char *kid, JWK *jwk)
 {
     if (!_jws_general_json_serizlize_handle_check(handle))
-        return DID_ERROR_INVALID_HANDLE;
+        return JOSE_ERROR_INVALID_HANDLE;
 
     if (NULL == g_jws_info.base64url_payload)
-        return DID_ERROR_BAD_STATE;
+        return JOSE_ERROR_BAD_STATE;
 
     if (NULL == jwk)
-        return DID_ERROR_INVALID_ARGUMENT;        
+        return JOSE_ERROR_INVALID_ARGUMENT;        
 
     char *protectedheader = _jws_protectedheader_encode(alg, NULL, false);
     if (NULL == protectedheader)
-        return DID_ERROR_INSUFFICIENT_MEMORY;
+        return JOSE_ERROR_INSUFFICIENT_MEMORY;
 
     uint8_t hash[32];
     size_t  hash_size = 0;
@@ -189,13 +189,13 @@ did_status_t iotex_jws_general_json_serialize_update(jws_handle_t handle, enum J
     psa_status_t status = psa_sign_hash(jwk->key_id, PSA_ALG_ECDSA(PSA_ALG_SHA_256), hash, hash_size, signature, sizeof(signature), &signature_length);
     if (PSA_SUCCESS != status) {
         free(protectedheader);
-        return DID_ERROR_INTERNAL_COMPUTE;
+        return JOSE_ERROR_INTERNAL_COMPUTE;
     }
 
     char *base64url_signature = base64_encode_automatic(signature, signature_length);
     if (NULL == base64url_signature) {
         free(protectedheader);
-        return DID_ERROR_INTERNAL_COMPUTE;        
+        return JOSE_ERROR_INTERNAL_COMPUTE;        
     }
 
     cJSON *signature_item = cJSON_CreateObject();
@@ -213,7 +213,7 @@ did_status_t iotex_jws_general_json_serialize_update(jws_handle_t handle, enum J
     if (protectedheader)
         free(protectedheader);
 
-    return DID_SUCCESS;         
+    return JOSE_SUCCESS;         
 }
 
 char *iotex_jws_general_json_serialize_finish(jws_handle_t handle, bool format)

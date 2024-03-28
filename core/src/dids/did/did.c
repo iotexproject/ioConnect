@@ -120,17 +120,16 @@ char* iotex_did_generate(char *name, JWK *jwk)
 
     if ( NULL == name )
         return NULL;
-
+    
     method = get_did_method_with_method_name(name);
     if (NULL == method) {
         printf("No match method\n");
         return NULL;
     }
-
+    
     if (NULL == method->generate)
         return NULL;
     
-
     return method->generate(jwk);        
 }
 

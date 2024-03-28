@@ -29,13 +29,13 @@ void iotex_jwt_claim_destroy(JWTClaim_handle handle)
     free(handle);
 }
 
-did_status_t iotex_jwt_claim_set_value(JWTClaim_handle handle, enum JWTClaimType type, char *name, void *value)
+jose_status_t iotex_jwt_claim_set_value(JWTClaim_handle handle, enum JWTClaimType type, char *name, void *value)
 {
     if (NULL == value || NULL == handle)
-        return DID_ERROR_INVALID_ARGUMENT;
+        return JOSE_ERROR_INVALID_ARGUMENT;
         
     if ((type == JWT_CLAIM_TYPE_PRIVATE_STRING || type == JWT_CLAIM_TYPE_PRIVATE_NUM || type == JWT_CLAIM_TYPE_PRIVATE_BOOL || type == JWT_CLAIM_TYPE_PRIVATE_JSON) && NULL == name)
-        return DID_ERROR_INVALID_ARGUMENT;
+        return JOSE_ERROR_INVALID_ARGUMENT;
 
     if (NULL == handle->claim)
         handle->claim = cJSON_CreateObject();
@@ -72,10 +72,10 @@ did_status_t iotex_jwt_claim_set_value(JWTClaim_handle handle, enum JWTClaimType
             cJSON_AddItemToObject(handle->claim, name, (cJSON *)value);            
         
         default:
-            return DID_ERROR_INVALID_ARGUMENT;            
+            return JOSE_ERROR_INVALID_ARGUMENT;            
     }
 
-    return DID_SUCCESS;
+    return JOSE_SUCCESS;
 }
 
 char *iotex_jwt_claim_serialize(JWTClaim_handle handle, bool format)
