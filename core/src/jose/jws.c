@@ -1,9 +1,13 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "include/jose/jws.h"
 #include "include/jose/jwk.h"
-
 #include "include/psa/crypto.h"
+#include "include/utils/baseX/base64.h"
 
-typedef struct _jws_general_json_serialize_info 
+struct _jws_general_json_serialize_info 
 {
     char  *base64url_payload;
 
@@ -11,6 +15,8 @@ typedef struct _jws_general_json_serialize_info
 
     cJSON *signatures;
 };
+
+typedef struct _jws_general_json_serialize_info *_JWSGeneralJsonSerializeInfo_t;
 
 static struct _jws_general_json_serialize_info g_jws_info = {0};
 

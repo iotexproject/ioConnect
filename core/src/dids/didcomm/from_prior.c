@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <string.h>
 #include "include/dids/didcomm/from_prior.h"
 
 FromPrior *fromprior_new(char *iss, char *sub)

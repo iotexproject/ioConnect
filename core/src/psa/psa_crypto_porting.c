@@ -670,7 +670,7 @@ inline int iotex_sha512_update( iotex_sha512_context *ctx, const unsigned char *
 #endif
 
 #ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
-    (void)tc_sha512_update ((TCSha256State_t)ctx->sha512_ctx, input, ilen);
+    (void)tc_sha512_update ((TCSha512State_t)ctx->sha512_ctx, input, ilen);
 
     return 0;
 #endif
@@ -683,7 +683,7 @@ inline int iotex_sha512_finish( iotex_sha512_context *ctx, unsigned char *output
 #endif
 
 #ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
-    (void)tc_sha512_final(output, (TCSha256State_t)ctx->sha512_ctx);
+    (void)tc_sha512_final((TCSha512State_t)ctx->sha512_ctx, output);
 
     return 0;
 #endif
@@ -2623,7 +2623,7 @@ psa_status_t iotex_key_agreement_ecdh( uint32_t curve,
                                         const uint8_t *key, size_t key_length, const uint8_t *peer_key, size_t peer_key_length,
                                         uint8_t *shared_secret, size_t shared_secret_size, size_t *shared_secret_length)
 {
-    struct uECC_Curve_t * crv = uECC_secp256r1();
+    uECC_Curve crv = uECC_secp256r1();
     
     switch (curve) {
         case PSA_ECC_FAMILY_SECP_R1:

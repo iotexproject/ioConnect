@@ -1,5 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+#include "include/jose/jws.h"
 #include "include/jose/jwk.h"
 #include "include/jose/jwt.h"
 

@@ -140,6 +140,10 @@ int iotex_dids_get_agreement_key(char *did, uint8_t *out, size_t *out_size)
 
 #define IOTEX_TEST_FOR_PROCESS
 #ifdef IOTEX_TEST_FOR_PROCESS
+
+#include "include/backends/tinycryt/ecc.h"
+#include "include/backends/tinycryt/ecc_dh.h"
+
 	uint8_t private[32] = {0};
 	uint8_t public[2*32] = {0};
 

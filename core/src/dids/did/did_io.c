@@ -6,6 +6,7 @@
 #include "include/dids/did/did.h"
 #include "include/dids/did/did_io.h"
 #include "include/utils/cJSON/cJSON.h"
+#include "include/utils/keccak256/keccak256.h"
 
 static char did_str[128] = {0};
 

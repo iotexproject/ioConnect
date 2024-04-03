@@ -90,7 +90,7 @@ extern "C" {
 /* struct tc_ccm_mode_struct represents the state of a CCM computation */
 typedef struct tc_ccm_mode_struct {
 	TCAesKeySched_t sched; /* AES key schedule */
-	uint8_t *nonce; /* nonce required by CCM */
+	const uint8_t *nonce; /* nonce required by CCM */
 	unsigned int mlen; /* mac length in bytes (parameter t in SP-800 38C) */
 } *TCCcmMode_t;
 
@@ -108,7 +108,7 @@ typedef struct tc_ccm_mode_struct {
  * @param nlen -- nonce length in bytes
  * @param mlen -- mac length in bytes (parameter t in SP-800 38C)
  */
-int tc_ccm_config(TCCcmMode_t c, TCAesKeySched_t sched, uint8_t *nonce,
+int tc_ccm_config(TCCcmMode_t c, TCAesKeySched_t sched, const uint8_t *nonce,
 		  unsigned int nlen, unsigned int mlen);
 
 /**

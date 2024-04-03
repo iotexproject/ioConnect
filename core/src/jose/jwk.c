@@ -5,6 +5,7 @@
 
 #include "include/jose/jwk.h"
 #include "include/utils/cJSON/cJSON.h"
+#include "include/utils/baseX/base64.h"
 
 enum JWAlogrithm iotex_jwk_get_algorithm(JWK *jwk)
 {
@@ -295,10 +296,10 @@ static jose_status_t _jwk_psa_key_attributes_set(psa_key_attributes_t *attribute
         psa_set_key_bits(attributes, 512); 
     }
 
-    psa_set_key_lifetime(&attributes, lifetime);
+    psa_set_key_lifetime(attributes, lifetime);
 
     if (IOTEX_JWK_LIFETIME_PERSISTENT == lifetime)
-        psa_set_key_id(&attributes, key_id);          
+        psa_set_key_id(attributes, key_id);          
 }
 
 JWK *iotex_jwk_generate(enum JWKType type, enum JWKSupportKeyAlg keyalg,
@@ -353,7 +354,7 @@ JWK *iotex_jwk_generate(enum JWKType type, enum JWKSupportKeyAlg keyalg,
     if( status != PSA_SUCCESS )
         return NULL;
 
-    psa_export_public_key( key_id, (uint8_t *)exported, sizeof(exported), &exported_length );
+    psa_export_public_key( *key_id, (uint8_t *)exported, sizeof(exported), &exported_length );
 
 jwk_generater:
 

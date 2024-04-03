@@ -1,14 +1,17 @@
 #include <stdlib.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "include/dids/vc/vc.h"
 #include "include/utils/cJSON/cJSON.h"
 
-typedef struct _vc_json_serialize_info 
+struct _vc_json_serialize_info 
 {
     vc_handle_t handle;
     VerifiableCredential *vc;
 };
+
+typedef struct _vc_json_serialize_info *VCJsonSerializeInfo_t;
 
 static struct _vc_json_serialize_info g_vc_info = {0};
 static char *ProofSuiteType_str[] = { "DataIntegrityProof", "Ed25519Signature2020", "Ed25519Signature2018",
@@ -86,7 +89,7 @@ did_status_t iotex_vc_destroy(vc_handle_t handle)
     if (g_vc_info.vc->property_set)
         cJSON_Delete((cJSON *)g_vc_info.vc->property_set);
 
-    memset(&g_vc_info.vc, 0, sizeof(VerifiableCredential));
+    memset(g_vc_info.vc, 0, sizeof(VerifiableCredential));
 
     free(g_vc_info.vc);
     g_vc_info.vc = NULL;         

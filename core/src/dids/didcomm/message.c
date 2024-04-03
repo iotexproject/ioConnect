@@ -1,13 +1,12 @@
+#include <string.h>
 #include "include/psa/crypto.h"
-
 #include "include/dids/didcomm/message.h"
 #include "include/dids/didcomm/envelope.h"
 #include "include/dids/didcomm/encrypted.h"
-
 #include "include/jose/jws.h"
 #include "include/jose/jwe.h"
-
 #include "include/utils/cJSON/cJSON.h"
+#include "include/utils/baseX/base64.h"
 
 char *did_or_url(char *str)
 {
@@ -620,7 +619,7 @@ char *didcomm_message_pack_signed(Message *message, char *sign_by, JWK *jwk)
     int  base64url_signature_len;    
 
     unsigned char signature[64] = {0};
-    unsigned int actual_len = 0;
+    size_t actual_len = 0;
     
     if (NULL == sign_by || NULL == jwk)
         return NULL;
@@ -647,14 +646,14 @@ char *didcomm_message_pack_signed(Message *message, char *sign_by, JWK *jwk)
     if (NULL == header)
         return NULL;
 
-    base64url_header_len = base64EncodeGetLength(strlen(header));
+    base64url_header_len = BASE64_ENCODE_GETLENGTH(strlen(header));   
     base64url_header = malloc(base64url_header_len);
     if (NULL == base64url_header)
         return NULL;
     memset(base64url_header, 0, base64url_header_len);
     base64url_encode(header, strlen(header), base64url_header, &base64url_header_len);
 
-    base64url_payload_len = base64EncodeGetLength(strlen(payload));
+    base64url_payload_len = BASE64_ENCODE_GETLENGTH(strlen(payload));
     base64url_payload = malloc(base64url_payload_len);
     if (NULL == base64url_payload) {
         free(base64url_header);
@@ -678,7 +677,7 @@ char *didcomm_message_pack_signed(Message *message, char *sign_by, JWK *jwk)
 
     psa_sign_message(1, PSA_ALG_ECDSA(PSA_ALG_SHA_256), sign_input, sign_input_len, signature, 64, &actual_len);
     
-    base64url_signature_len = base64EncodeGetLength(actual_len);
+    base64url_signature_len = BASE64_ENCODE_GETLENGTH(actual_len);
     base64url_signature = malloc(base64url_signature_len);
     if (NULL == base64url_signature) {
         free(base64url_header);
@@ -756,6 +755,9 @@ char *didcomm_message_pack_encrypted(Message *message, char *from, char *to, cha
     return encrypted_msg;                   
 }
 
+#include "include/backends/tinycryt/ecc.h"
+#include "include/backends/tinycryt/ecc_dh.h"
+
 int message_encrypt_test(char *plaintext)
 {
     psa_status_t status;
@@ -815,7 +817,7 @@ int message_encrypt_test(char *plaintext)
 	uint8_t secret1[32] = {0};
 	uint8_t secret2[32] = {0};
 
-	const struct uECC_Curve_t * curve = uECC_secp256r1();
+	uECC_Curve curve = uECC_secp256r1();
 
     if (!uECC_make_key(public1, private1, curve)) {
         printf("make key failed\n");

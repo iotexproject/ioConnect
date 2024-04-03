@@ -1,12 +1,18 @@
-#include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
-#include <malloc.h>
+
+#include "include/psa/crypto.h"
+#include "include/jose/jwk.h"
+#include "include/dids/did/did.h"
+#include "include/dids/did/did_key.h"
+#include "include/utils/cJSON/cJSON.h"
+#include "include/utils/baseX/base58.h"
 
 char *base58_encode(const unsigned char *src, int len)
 {
     const char encoding_table[58] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
-    char *out, *ptr;
+    char *out = NULL, *ptr = NULL;
     unsigned int size, high, zero = 0;
     int i, j, carry;
 
@@ -18,6 +24,7 @@ char *base58_encode(const unsigned char *src, int len)
     }
 
     size = (len - zero) * 138 / 100;
+
     unsigned char buff[size + 1];
     memset(buff, 0, size + 1);
 

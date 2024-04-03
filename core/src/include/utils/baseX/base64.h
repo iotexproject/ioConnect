@@ -9,6 +9,7 @@
 #ifndef BASE64_H
 #define BASE64_H
 
+#define BASE64_ENCODE_GETLENGTH(x) (((x + 3 - 1) / 3) * 4) + 1
 
 int base64_encode(const char *indata, int inlen, char *outdata, int *outlen);
 int base64_decode(const char *indata, int inlen, char *outdata, int *outlen);

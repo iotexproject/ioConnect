@@ -14,6 +14,8 @@
 #include "include/jose/jwk.h"
 #include "include/jose/jwe.h"
 
+#include "include/utils/baseX/base64.h"
+
 static char *_jwe_enc_algorithm_as_str(enum EncAlgorithm alg)
 {
     switch (alg) {
@@ -60,12 +62,12 @@ static int _find_recipients_num(char *recipients_kid[4], unsigned int *kid_len)
 static char * _fill_apu_from_sender(char *sender)
 {
     char  *base64url_encode_buf = NULL;
-    size_t base64url_encode_len;  
+    int base64url_encode_len;  
 
     if (NULL == sender)
         return NULL;
 
-    base64url_encode_len = base64EncodeGetLength(strlen(sender));
+    base64url_encode_len = BASE64_ENCODE_GETLENGTH(strlen(sender));
     base64url_encode_buf = malloc(base64url_encode_len);
     if (NULL == base64url_encode_buf)
         return NULL;
@@ -81,7 +83,8 @@ static char * _fill_recipients_apv(char *recipients_kid[4])
 
     char *apv = NULL, *base64url_encode_buf = NULL;
     uint8_t hash[32]  = {0};
-    size_t hash_length, base64url_encode_len;    
+    size_t hash_length;
+    int base64url_encode_len;    
     uint32_t recipients_kid_len = 0, idx = 0; 
     
     int recipients_num = _find_recipients_num(recipients_kid, &recipients_kid_len);
@@ -108,7 +111,7 @@ static char * _fill_recipients_apv(char *recipients_kid[4])
     if (PSA_SUCCESS != status)
         goto exit;   
 
-    base64url_encode_len = base64EncodeGetLength(hash_length);
+    base64url_encode_len = BASE64_ENCODE_GETLENGTH(hash_length);
     base64url_encode_buf = malloc(base64url_encode_len);
     if (NULL == base64url_encode_buf)
         goto exit;
@@ -125,7 +128,7 @@ exit:
 static char * _jwe_protectedheader_serialize(JweProtectedHeader *protected)
 {
     if (NULL == protected)
-        return;
+        return NULL;
 
     cJSON *json_protected = cJSON_CreateObject();
     cJSON_AddStringToObject(json_protected, "typ", protected->typ);
@@ -224,7 +227,7 @@ char * iotex_jwe_encrypt(char *plaintext, enum KWAlgorithms alg, enum EncAlgorit
     status = psa_generate_random( cekey, sizeof(cekey) );
     if (PSA_SUCCESS != status)
         return NULL;
-
+    
     psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
     psa_set_key_usage_flags(&attributes, PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
     psa_set_key_algorithm(&attributes, PSA_ALG_CCM);
@@ -262,6 +265,9 @@ char * iotex_jwe_encrypt(char *plaintext, enum KWAlgorithms alg, enum EncAlgorit
 
     uint8_t recipient_key[ 2*32 ] = {0}, secret[32] = {0};
     size_t secret_len = 0;
+
+#include "include/backends/tinycryt/ecc.h"
+#include "include/backends/tinycryt/ecc_dh.h"
 
 	uint8_t private[32] = {0};
     if (!uECC_make_key(recipient_key, private, uECC_secp256r1()))

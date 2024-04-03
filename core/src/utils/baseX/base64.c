@@ -7,7 +7,10 @@
  *********************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+#include "include/utils/baseX/base64.h"
 
 static const char base64_encode_table[] = {
     'A','B','C','D','E','F','G','H','I','J',
@@ -230,29 +233,15 @@ char * base64url_malloc(unsigned int *len)
     return temp;        
 }
 
-unsigned int base64EncodeGetLength( unsigned int size )
-{
-    /*
-     * output 4 bytes for every 3 input:
-     *                1        2        3
-     * 1 = --111111 = 111111--
-     * 2 = --11XXXX = ------11 XXXX----
-     * 3 = --1111XX =          ----1111 XX------
-     * 4 = --111111 =                   --111111
-     */
-
-    return (((size + 3 - 1) / 3) * 4) + 1; /*plus terminator*/
-}
-
 char *base64_encode_automatic( unsigned char *buf, size_t buf_len )
 {
     char *encode = NULL;
-    size_t encoded_len = 0;  
+    int encoded_len = 0;  
 
     if (NULL == buf || 0 == buf_len)
         return NULL;
 
-    encoded_len = base64EncodeGetLength(buf_len);
+    encoded_len = BASE64_ENCODE_GETLENGTH(buf_len);
     encode = malloc(encoded_len);
     if (NULL == encode)
         return NULL;

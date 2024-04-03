@@ -36,7 +36,7 @@
 
 #include <stdio.h>
 
-int tc_ccm_config(TCCcmMode_t c, TCAesKeySched_t sched, uint8_t *nonce,
+int tc_ccm_config(TCCcmMode_t c, TCAesKeySched_t sched, const uint8_t *nonce,
 		  unsigned int nlen, unsigned int mlen)
 {
 

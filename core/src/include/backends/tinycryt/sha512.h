@@ -7,7 +7,7 @@
 #include "include/backends/tinycryt/fixedint.h"
 
 /* state */
-typedef struct tc_sha512_state_struct {
+struct tc_sha512_state_struct {
     uint64_t  length, state[8];
     size_t curlen;
     unsigned char buf[128];

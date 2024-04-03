@@ -5601,6 +5601,10 @@ static psa_status_t psa_key_agreement_raw_internal( psa_algorithm_t alg,
             if( ! PSA_KEY_TYPE_IS_ECC_KEY_PAIR( private_key->attr.type ) )
                 return( PSA_ERROR_INVALID_ARGUMENT );
 #if defined(CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT)
+extern psa_status_t iotex_key_agreement_ecdh( uint32_t curve,
+                                        const uint8_t *key, size_t key_length, const uint8_t *peer_key, size_t peer_key_length,
+                                        uint8_t *shared_secret, size_t shared_secret_size, size_t *shared_secret_length);
+
             psa_status_t status = iotex_key_agreement_ecdh( PSA_KEY_TYPE_ECC_GET_FAMILY(private_key->attr.type), private_key->key.data, private_key->key.bytes, peer_key, peer_key_length, shared_secret, shared_secret_size, shared_secret_length);
 #else                
             iotex_ecp_keypair *ecp = NULL;

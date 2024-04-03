@@ -141,8 +141,7 @@ int uECC_make_key(uint8_t *public_key, uint8_t *private_key, uECC_Curve curve)
 
 int uECC_make_key_with_ed25519(uint8_t *public_key, uint8_t *private_key)
 {
-	uECC_word_t _random[NUM_ECC_WORDS * 4];
-	uECC_word_t tries;
+	uint8_t _random[NUM_ECC_WORDS * 4];
 	ge_p3 A;
 
 	/* Generating _private uniformly at random: */

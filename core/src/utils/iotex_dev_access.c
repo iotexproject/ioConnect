@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -14,6 +15,8 @@
 #ifdef CONFIG_PSA_ITS_NVS_C
 #include "include/hal/nvs/nvs_common.h"
 #endif
+
+#include "DeviceConnect_Core.h"
 
 #define USER_WALLET_ADDR_LEN_MAX 			200
 #define DEFAULT_TIME_STAMP_UNIX_VALUE      	1701284562
@@ -294,7 +297,7 @@ int iotex_dev_access_data_upload_with_userdata(void *buf, size_t buf_len, enum U
  			return IOTEX_DEV_ACCESS_ERR_BAD_INPUT_PARAMETER;
  	}
 
- 	psa_sign_message( g_sdkcore_key, PSA_ALG_ECDSA(PSA_ALG_SHA_256), (const uint8_t *)message, message_len, (uint8_t *)sign_buf, 64, &sign_len);
+ 	psa_sign_message( g_sdkcore_key, PSA_ALG_ECDSA(PSA_ALG_SHA_256), (const uint8_t *)message, message_len, (uint8_t *)sign_buf, 64, (size_t *)&sign_len);
 
  	upload.has_payload = true;
  	upload.payload.sign.size = sign_len;
@@ -444,7 +447,7 @@ int iotex_dev_access_dev_register_confirm(int8_t mac[6]) {
     raw_data[upload.payload.pConfirm.owner.size + 2] = (char)((timestamp & 0x0000FF00) >> 8);
     raw_data[upload.payload.pConfirm.owner.size + 3] = (char)(timestamp & 0x000000FF);	
 
-	psa_sign_message( g_sdkcore_key, PSA_ALG_ECDSA(PSA_ALG_SHA_256), (const uint8_t *)(raw_data), upload.payload.pConfirm.owner.size + 4, (uint8_t *)sign_buf, 64, &sign_len);
+	psa_sign_message( g_sdkcore_key, PSA_ALG_ECDSA(PSA_ALG_SHA_256), (const uint8_t *)(raw_data), upload.payload.pConfirm.owner.size + 4, (uint8_t *)sign_buf, 64, (size_t *)&sign_len);
 	LowsCalc(sign_buf + 32, sign_buf + 32);
 	
 	upload.payload.pConfirm.timestamp = timestamp;
