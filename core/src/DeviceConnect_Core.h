@@ -26,6 +26,8 @@ uint8_t * iotex_deviceconnect_sdk_core_init(iotex_gettime get_time_func, iotex_m
 uint8_t * iotex_deviceconnect_sdk_core_get_public_key(void);
 uint8_t * iotex_deviceconnect_sdk_core_get_eth_addr(void);
 
+void iotex_ioconnect_core_init(void);
+
 #ifdef __cplusplus
 }
 #endif

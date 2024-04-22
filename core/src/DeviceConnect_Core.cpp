@@ -48,11 +48,11 @@ static void iotex_export_public_key(void) {
 }
 
 #ifdef ARDUINO
-uint8_t * iotex_deviceconnect_sdk_core_init(DevConn_Comm *commClient) {
+uint8_t * iotex_deviceconnect_sdk_core_init(DevConn_Comm *commClient)
 #else
-uint8_t * iotex_deviceconnect_sdk_core_init(iotex_gettime get_time_func, iotex_mqtt_pub mqtt_pub, iotex_mqtt_sub mqtt_sub) {
+uint8_t * iotex_deviceconnect_sdk_core_init(iotex_gettime get_time_func, iotex_mqtt_pub mqtt_pub, iotex_mqtt_sub mqtt_sub) 
 #endif
-
+{
     psa_crypto_init();
     iotex_dev_access_init();
 
@@ -113,4 +113,8 @@ int iotex_device_connect_mqtt_pub(unsigned char *topic, unsigned char *buf, unsi
 }
 #endif
 
+void iotex_ioconnect_core_init(void)
+{
+    psa_crypto_init();   
+}  
 
