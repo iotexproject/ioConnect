@@ -34,7 +34,9 @@ typedef int did_status_t;
 #define DID_ERROR_INVALID_SIGNATURE     ((did_status_t)-20)
 #define DID_ERROR_DEPENDENCY_NEEDED     ((did_status_t)-21)
 #define DID_ERROR_CURRENTLY_INSTALLING  ((did_status_t)-22)
-#define DID_ERROR_INTERNAL_COMPUTE      ((did_status_t)-22)
+#define DID_ERROR_INTERNAL_COMPUTE      ((did_status_t)-23)
+#define DID_ERROR_BUFFER_FULL           ((did_status_t)-24)
+#define DID_ERROR_DATA_FORMAT           ((did_status_t)-25)
 
 
 #endif

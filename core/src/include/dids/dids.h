@@ -4,6 +4,7 @@
 #include "include/dids/did/did.h"
 #include "include/dids/did/did_io.h"
 #include "include/dids/did/did_key.h"
+#include "include/dids/did/registry.h"
 
 #include "include/dids/vc/vc.h"
 #include "include/dids/didcomm/encrypted.h"
