@@ -15,7 +15,7 @@ extern "C" {
 
 /* See iotex_config.h for definition */
 #if !defined(IOTEX_PSA_KEY_SLOT_COUNT)
-#define IOTEX_PSA_KEY_SLOT_COUNT    4       //32
+#define IOTEX_PSA_KEY_SLOT_COUNT   32
 #endif
 
 /** \addtogroup attributes
