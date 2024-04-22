@@ -1,7 +1,7 @@
 #ifndef PSA_CRYPTO_RSA_H
 #define PSA_CRYPTO_RSA_H
 
-#include "include/psa/crypto.h"
+#include "include/server/crypto.h"
 #include "include/iotex/rsa.h"
 
 /** Load the contents of a key buffer into an internal RSA representation
