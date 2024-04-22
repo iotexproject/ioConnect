@@ -60,10 +60,12 @@ static const uint8_t inv_sbox[256] = {
 	0x55, 0x21, 0x0c, 0x7d
 };
 
+#if 0
 int tc_aes128_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k)
 {
 	return tc_aes128_set_encrypt_key(s, k);
 }
+#endif
 
 int tc_aes_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k)
 {
@@ -86,7 +88,7 @@ static inline void mult_row_column(uint8_t *out, const uint8_t *in)
 
 static inline void inv_mix_columns(uint8_t *s)
 {
-	uint8_t t[Nb*Nk];
+	uint8_t t[16];
 
 	mult_row_column(t, s);
 	mult_row_column(&t[Nb], s+Nb);
@@ -111,7 +113,7 @@ static inline void inv_sub_bytes(uint8_t *s)
 {
 	unsigned int i;
 
-	for (i = 0; i < (Nb*Nk); ++i) {
+	for (i = 0; i < (16); ++i) {
 		s[i] = inv_sbox[s[i]];
 	}
 }
@@ -123,7 +125,7 @@ static inline void inv_sub_bytes(uint8_t *s)
  */
 static inline void inv_shift_rows(uint8_t *s)
 {
-	uint8_t t[Nb*Nk];
+	uint8_t t[16];
 
 	t[0]  = s[0]; t[1] = s[13]; t[2] = s[10]; t[3] = s[7];
 	t[4]  = s[4]; t[5] = s[1]; t[6] = s[14]; t[7] = s[11];
@@ -134,7 +136,7 @@ static inline void inv_shift_rows(uint8_t *s)
 
 int tc_aes_decrypt(uint8_t *out, const uint8_t *in, const TCAesKeySched_t s)
 {
-	uint8_t state[Nk*Nb];
+	uint8_t state[16];
 	unsigned int i;
 
 	if (out == (uint8_t *) 0) {
@@ -155,7 +157,7 @@ int tc_aes_decrypt(uint8_t *out, const uint8_t *in, const TCAesKeySched_t s)
 	add_round_key(state, s->words + Nb * s->nr);
 #endif
 
-	for (i = Nr - 1; i > 0; --i) {
+	for (i = s->nr - 1; i > 0; --i) {
 		inv_shift_rows(state);
 		inv_sub_bytes(state);
 		add_round_key(state, s->words + Nb*i);

@@ -93,6 +93,7 @@ int tc_aes_key_sched_init(TCAesKeySched_t s, enum tc_aes_key_sched_mode mode)
 	return TC_CRYPTO_SUCCESS;
 }
 
+#if 0
 int tc_aes128_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k)
 {
 	const unsigned int rconst[11] = {
@@ -123,15 +124,15 @@ int tc_aes128_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k)
 
 	return TC_CRYPTO_SUCCESS;
 }
+#endif
 
 int tc_aes_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k)
 {
-	const uint32_t rconst[15]= {
-  		0x01000000, 0x02000000, 0x04000000, 0x08000000,
-		0x10000000, 0x20000000, 0x40000000, 0x80000000, 
-		0x1B000000, 0x36000000, 0x6C000000, 0xD8000000,
-		0xAB000000, 0x4D000000, 0x9A000000
+	const unsigned int rconst[11] = {
+		0x00000000, 0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000,
+		0x20000000, 0x40000000, 0x80000000, 0x1b000000, 0x36000000
 	};
+
 	unsigned int i;
 	unsigned int t;
 
@@ -154,6 +155,10 @@ int tc_aes_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k)
 		if ((i % s->nk) == 0) {
 			t = subword(rotword(t)) ^ rconst[i/s->nk];
 		}
+
+		if ((s->nk == 8) && ((i % s->nk) == 4))
+			t = subword(t);
+
 		s->words[i] = s->words[i - s->nk] ^ t;
 	}
 
@@ -176,7 +181,7 @@ static inline void sub_bytes(uint8_t *s)
 {
 	unsigned int i;
 
-	for (i = 0; i < (Nb * Nk); ++i) {
+	for (i = 0; i < 16; ++i) {
 		s[i] = sbox[s[i]];
 	}
 }
@@ -193,7 +198,7 @@ static inline void mult_row_column(uint8_t *out, const uint8_t *in)
 
 static inline void mix_columns(uint8_t *s)
 {
-	uint8_t t[Nb*Nk];
+	uint8_t t[16];
 
 	mult_row_column(t, s);
 	mult_row_column(&t[Nb], s+Nb);
@@ -208,7 +213,7 @@ static inline void mix_columns(uint8_t *s)
  */
 static inline void shift_rows(uint8_t *s)
 {
-	uint8_t t[Nb * Nk];
+	uint8_t t[16];
 
 	t[0]  = s[0]; t[1] = s[5]; t[2] = s[10]; t[3] = s[15];
 	t[4]  = s[4]; t[5] = s[9]; t[6] = s[14]; t[7] = s[3];
@@ -219,7 +224,7 @@ static inline void shift_rows(uint8_t *s)
 
 int tc_aes_encrypt(uint8_t *out, const uint8_t *in, const TCAesKeySched_t s)
 {
-	uint8_t state[Nk*Nb];
+	uint8_t state[16];
 	unsigned int i;
 
 	if (out == (uint8_t *) 0) {

@@ -107,7 +107,11 @@ static void tc_ctr_prng_update(TCCtrPrng_t * const ctx, uint8_t const * const pr
 		}
 
 		/* 10.2.1.2 step 5 */
+#if 0		
 		(void)tc_aes128_set_encrypt_key(&ctx->key, temp);
+#else
+		(void)tc_aes_set_encrypt_key(&ctx->key, temp);
+#endif		
     
 		/* 10.2.1.2 step 6 */
 		memcpy(ctx->V, &(temp[TC_AES_KEY_SIZE]), TC_AES_BLOCK_SIZE);
@@ -145,7 +149,11 @@ int tc_ctr_prng_init(TCCtrPrng_t * const ctx,
 		}
 
 		/* 10.2.1.3.1 step 4 */
+#if 0		
 		(void)tc_aes128_set_encrypt_key(&ctx->key, zeroArr);
+#else
+		(void)tc_aes_set_encrypt_key(&ctx->key, zeroArr);
+#endif		
 
 		/* 10.2.1.3.1 step 5 */
 		memset(ctx->V,   0x00, sizeof ctx->V);

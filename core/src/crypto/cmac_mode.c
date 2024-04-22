@@ -108,7 +108,12 @@ int tc_cmac_setup(TCCmacState_t s, const uint8_t *key, TCAesKeySched_t sched)
 	s->sched = sched;
 
 	/* configure the encryption key used by the underlying block cipher */
+#if 0	
 	tc_aes128_set_encrypt_key(s->sched, key);
+#else
+	tc_aes_set_encrypt_key(s->sched, key);
+#endif
+
 
 	/* compute s->K1 and s->K2 from s->iv using s->keyid */
 	_set(s->iv, 0, TC_AES_BLOCK_SIZE);

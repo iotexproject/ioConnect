@@ -92,7 +92,6 @@ int tc_aes_key_sched_init(TCAesKeySched_t s, enum tc_aes_key_sched_mode mode);
  *  @param      s IN/OUT -- initialized struct tc_aes_key_sched_struct
  *  @param      k IN -- points to the AES key
  */
-int tc_aes128_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k);
 int tc_aes_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k);
 /**
  *  @brief AES-128 Encryption procedure
