@@ -217,7 +217,7 @@ int iotex_platform_set_snprintf( int (*snprintf_func)( char * s, size_t n,
 #if defined(IOTEX_PLATFORM_SNPRINTF_MACRO)
 #define iotex_snprintf   IOTEX_PLATFORM_SNPRINTF_MACRO
 #else
-#define iotex_snprintf   IOTEX_PLATFORM_STD_SNPRINTF
+#define iotex_snprintf   snprintf
 #endif /* IOTEX_PLATFORM_SNPRINTF_MACRO */
 #endif /* IOTEX_PLATFORM_SNPRINTF_ALT */
 
