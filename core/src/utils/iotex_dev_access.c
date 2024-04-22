@@ -6,7 +6,7 @@
 
 #include "include/common.h"
 #include "include/utils/iotex_dev_access.h"
-#include "include/psa/crypto.h"
+#include "include/server/crypto.h"
 
 #ifdef CONFIG_PSA_ITS_FLASH_C
 #include "include/hal/flash/flash_common.h"

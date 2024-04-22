@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "include/psa/crypto.h"
+#include "include/server/crypto.h"
 #include "include/jose/jwk.h"
 #include "include/dids/did/did.h"
 #include "include/dids/did/did_key.h"

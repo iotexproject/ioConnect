@@ -29,7 +29,7 @@
 #include "include/iotex/cipher.h"
 
 #if defined(IOTEX_USE_PSA_CRYPTO)
-#include "include/psa/crypto.h"
+#include "include/server/crypto.h"
 #endif /* IOTEX_USE_PSA_CRYPTO */
 
 #ifdef __cplusplus
