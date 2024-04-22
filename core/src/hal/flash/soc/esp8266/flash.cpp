@@ -1,3 +1,4 @@
+#ifdef ARDUINO
 #include <Arduino.h>
 #include <EEPROM.h>
 #include "include/hal/flash/flash_common.h"
@@ -78,3 +79,4 @@ flash_drv esp8266_flash = {ESP8266_FLASH_START_ADDRESS, ESP8266_FLASH_SIZE, ESP8
                                 esp8266_hal_flash_read, 
                                 esp8266_hal_flash_protect};
 
+#endif
