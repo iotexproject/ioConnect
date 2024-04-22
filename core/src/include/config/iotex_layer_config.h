@@ -717,7 +717,9 @@
  *
  * Enable functions that use the filesystem.
  */
-//#define IOTEX_FS_IO
+#ifdef CONFIG_PSA_ITS_FS_C
+#define IOTEX_FS_IO
+#endif
 
 #ifdef CONFIG_PSA_NO_DEFAULT_ENTROPY_SOURCES
 #define IOTEX_NO_DEFAULT_ENTROPY_SOURCES
