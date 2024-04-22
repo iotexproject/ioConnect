@@ -1,9 +1,15 @@
 #ifndef __IOTEX_JOSE_JWK_H__
 #define __IOTEX_JOSE_JWK_H__
 
+#include "include/server/crypto.h" 
 #include "include/jose/common.h"
 
 typedef char Base64url;
+
+enum JWKRegistryType {
+    JWKREGISTRYTYPE_OWNER,
+    JWKREGISTRYTYPE_PEER,
+};
 
 enum JWAlogrithm {
     None,
@@ -108,22 +114,27 @@ typedef struct {
 enum JWAlogrithm iotex_jwk_get_algorithm(JWK *jwk);
 enum KnownKeyAlg iotex_jwk_get_key_alg(JWK *jwk);
 
+JWK *iotex_jwk_copy(JWK *jwk, bool skipPrivate);
 JWK *iotex_jwk_to_public(JWK *jwk);
 JWK *iotex_jwk_generate(enum JWKType type, enum JWKSupportKeyAlg keyalg,
                                 int lifetime, unsigned int key_usage, unsigned int alg, unsigned int *key_id);
 JWK* iotex_jwk_generate_by_secret(uint8_t *secret, unsigned int secret_size,
                                 enum JWKType type, enum JWKSupportKeyAlg keyalg,
                                 int lifetime, unsigned int key_usage, unsigned int alg, unsigned int *key_id);                                
+JWK *iotex_jwk_get_jwk_from_json_value(void *json_value);                                
 
 void *_did_jwk_json_generate(JWK *jwk);
 void iotex_jwk_destroy(JWK *jwk);
 
 char *iotex_jwk_serialize(JWK *jwk, bool format);
+char *iotex_jwk_generate_kid(char *method, JWK *jwk);
 
 bool iotex_jwk_equals(JWK *jwk1, JWK *jwk2, bool skipPri);
 
-jose_status_t iotex_jwk_get_pubkey_from_jwk(JWK *jwk, char *outdata, uint32_t *outdata_len);
+jose_status_t iotex_jwk_get_pubkey_from_jwk(JWK *jwk, char *outdata, size_t *outdata_len);
 jose_status_t iotex_pubkey_uncompress_convert_compress(const char *uncompress, char *compress);
+
+psa_key_id_t iotex_jwk_get_psa_key_id_from_didurl(char *didurl);
 
 #endif
 

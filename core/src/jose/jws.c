@@ -4,7 +4,7 @@
 
 #include "include/jose/jws.h"
 #include "include/jose/jwk.h"
-#include "include/psa/crypto.h"
+#include "include/server/crypto.h"
 #include "include/utils/baseX/base64.h"
 
 struct _jws_general_json_serialize_info 
@@ -99,14 +99,16 @@ char *iotex_jws_compact_serialize(enum JWAlogrithm alg, char *plaintext, size_t 
         return NULL;
     
     char *base64url_payload = base64_encode_automatic(plaintext, plaintext_size);
-    if (NULL == base64url_payload)
-        goto exit_3;
-    
+    if (NULL == base64url_payload) {
+        free(protectedheader);
+        return NULL;
+    }
+  
     uint8_t hash[32];
     size_t  hash_size = 0;
     psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
+    
     psa_hash_setup(&operation, PSA_ALG_SHA_256);
-
     psa_hash_update(&operation, protectedheader, strlen(protectedheader));
     psa_hash_update(&operation, ".", 1);
     psa_hash_update(&operation, base64url_payload, strlen(base64url_payload));
@@ -122,23 +124,17 @@ char *iotex_jws_compact_serialize(enum JWAlogrithm alg, char *plaintext, size_t 
     if (NULL == base64url_signature)
         goto exit_2;
     
-    int jws_compact_serialize_size = strlen(protectedheader) + 1 + strlen(base64url_payload) + 1 + strlen(base64url_signature) + 1;
+    size_t jws_compact_serialize_size = strlen(protectedheader) + 1 + strlen(base64url_payload) + 1 + strlen(base64url_signature) + 1;
     jws_compact_serialize = realloc(protectedheader, jws_compact_serialize_size);
-    if (NULL == jws_compact_serialize)
-        goto exit_1;
+    if (jws_compact_serialize) 
+        snprintf(jws_compact_serialize + strlen(jws_compact_serialize), jws_compact_serialize_size - strlen(jws_compact_serialize), ".%s.%s", base64url_payload, base64url_signature);
     
-    snprintf(jws_compact_serialize + strlen(jws_compact_serialize), jws_compact_serialize_size - strlen(jws_compact_serialize), ".%s.%s", base64url_payload, base64url_signature);
-    protectedheader = NULL;
-
 exit_1:
     if (base64url_signature)
         free(base64url_signature);
 exit_2:
     if (base64url_payload)
         free(base64url_payload);
-exit_3:
-    if (protectedheader)
-        free(protectedheader);
 
     return jws_compact_serialize;             
 }
@@ -323,4 +319,74 @@ exit_3:
     return jws_flattened_serialize;  
 }
 
+static jose_status_t _find_point_position(char *jws, uint32_t *first, uint32_t *second)
+{
+    uint32_t idx = 0;
+
+    if (NULL == jws)
+        return JOSE_ERROR_INVALID_ARGUMENT;
+
+    size_t jws_size = strlen(jws);
+
+    for (int i = 0; i < jws_size; i++) {
+
+        if (jws[i] != '.') 
+            continue;
+
+        idx++;
+
+        if (idx == 1 && first)
+            *first = i;            
+
+        if (idx == 2 && second)
+            *second = i;            
+    }
+
+    if (idx != 2) 
+        return JOSE_ERROR_INSUFFICIENT_DATA;
+
+    return JOSE_SUCCESS;
+}
+
+static bool _is_jws_compact(char *jws)
+{
+    if (JOSE_SUCCESS != _find_point_position(jws, NULL, NULL))
+        return false;
+
+    return true;
+}
+
+bool iotex_jws_compact_verify(enum JWAlogrithm alg, char *jws_msg, JWK *jwk)
+{
+    if (NULL == jws_msg || NULL == jwk)
+        return false;
+
+    if (!_is_jws_compact(jws_msg))
+        return false;
+
+    uint32_t payload_pos = 0, signature_pos = 0;
+    jose_status_t jose_status = _find_point_position(jws_msg, &payload_pos, &signature_pos);
+    if (JOSE_SUCCESS != jose_status)
+        return false;
+
+    uint8_t hash[32] = {0};
+    size_t  hash_size = 0;
+    psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
+    
+    psa_hash_setup(&operation, PSA_ALG_SHA_256);
+    psa_hash_update(&operation, jws_msg, signature_pos);
+    psa_hash_finish(&operation, hash, sizeof(hash), &hash_size);
+
+    size_t signature_size = 0;
+    char *signature = base64_decode_automatic(jws_msg + signature_pos + 1, strlen(jws_msg) - signature_pos - 1, &signature_size);
+    if (NULL == signature)
+        return false;
+
+    psa_status_t psa_status = psa_verify_hash( jwk->key_id, PSA_ALG_ECDSA(PSA_ALG_SHA_256), hash, hash_size, signature, signature_size);
+
+    if (signature)
+        free(signature);
+
+    return (PSA_SUCCESS == psa_status) ? true : false;
+}
 

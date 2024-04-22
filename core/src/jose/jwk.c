@@ -1,9 +1,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "include/psa/crypto.h"
+#include "include/server/crypto.h"
 
 #include "include/jose/jwk.h"
+#include "include/dids/did/did.h"
+#include "include/dids/did/registry.h"
 #include "include/utils/cJSON/cJSON.h"
 #include "include/utils/baseX/base64.h"
 
@@ -66,28 +68,97 @@ enum KnownKeyAlg iotex_jwk_get_key_alg(JWK *jwk)
     return Unsupported;
 }
 
-JWK *iotex_jwk_to_public(JWK *jwk)
+JWK *iotex_jwk_get_jwk_from_json_value(void *json_value)
 {
-    JWK *jwk_public = NULL;
+    if (NULL == json_value)
+        return NULL;
+    
+    cJSON *jwk_item = (cJSON *)json_value;
+    if (!cJSON_IsObject(jwk_item))
+        return NULL;
+
+    JWK *jwk = malloc(sizeof(JWK));
+    if (NULL == jwk)
+        return NULL;
+    memset(jwk, 0, sizeof(JWK));
+
+    cJSON *type_item = cJSON_GetObjectItem(jwk_item, "kty");
+    if (NULL == type_item)
+        goto exit;
+    
+    if (0 == strcmp(type_item->valuestring, "EC"))
+        jwk->type = JWKTYPE_EC;
+    else 
+        goto exit;
+    
+    cJSON *kid_item = cJSON_GetObjectItem(jwk_item, "kid");
+    if (NULL == kid_item)
+        goto exit;
+
+    jwk->key_id = iotex_jwk_get_psa_key_id_from_didurl(kid_item->valuestring);
+    if (0 == jwk->key_id)
+        goto exit;
+    
+    if (jwk->type == JWKTYPE_EC) {
+
+        cJSON *crv_item = cJSON_GetObjectItem(jwk_item, "crv");
+        if (NULL == crv_item)
+            goto exit;
+
+        strcpy(jwk->Params.ec.crv, crv_item->valuestring);
+
+        cJSON *x_item = cJSON_GetObjectItem(jwk_item, "x");
+        if (NULL == x_item)
+            goto exit;
+
+        strcpy(jwk->Params.ec.x_coordinate, x_item->valuestring);
+
+        cJSON *y_item = cJSON_GetObjectItem(jwk_item, "y");
+        if (NULL == y_item)
+            goto exit;
+
+        strcpy(jwk->Params.ec.y_coordinate, y_item->valuestring);  
+
+        cJSON *d_item = cJSON_GetObjectItem(jwk_item, "d");
+        if (NULL != d_item)
+            strcpy(jwk->Params.ec.ecc_private_key, d_item->valuestring);           
+    
+        return jwk;
+    }
+
+exit:
+
+    if (jwk)
+        iotex_jwk_destroy(jwk);
+
+    return NULL;
+}
+
+JWK *iotex_jwk_copy(JWK *jwk, bool skipPrivate)
+{
+    JWK *jwk_new = NULL;
 
     if (NULL == jwk)
         return NULL;
 
     switch (jwk->type) {
         case JWKTYPE_EC:
-            if (jwk->Params.ec.ecc_private_key[0]) {
+            jwk_new = malloc(sizeof(JWK));
+            if (NULL == jwk_new)
+                return NULL;
 
-                jwk_public = malloc(sizeof(JWK));
-                if (NULL == jwk_public)
-                    return NULL;
+            memcpy(jwk_new, jwk, sizeof(JWK));
 
-                memcpy(jwk_public, jwk, sizeof(JWK));   
-                memset(jwk_public->Params.ec.ecc_private_key, 0, sizeof(jwk_public->Params.ec.ecc_private_key));
+            if (jwk->x509_url)
+                jwk_new->x509_url = strdup(jwk->x509_url);
 
-                return jwk_public;
-            } 
+            if (jwk->x509_certificate_chain)
+                jwk_new->x509_certificate_chain = strdup(jwk->x509_certificate_chain);
 
-            return jwk;
+            if (skipPrivate)   
+                memset(jwk_new->Params.ec.ecc_private_key, 0, sizeof(jwk_new->Params.ec.ecc_private_key));
+
+            return jwk_new;
         case JWKTYPE_Symmetric:
             break;
         case JWKTYPE_RSA:
@@ -98,7 +169,12 @@ JWK *iotex_jwk_to_public(JWK *jwk)
             break;
     }
 
-    return NULL;  
+    return NULL;      
+}
+
+JWK *iotex_jwk_to_public(JWK *jwk)
+{
+    return iotex_jwk_copy(jwk, true);
 }
 
 bool iotex_jwk_equals(JWK *jwk1, JWK *jwk2, bool skipPri)
@@ -143,7 +219,12 @@ bool iotex_jwk_equals(JWK *jwk1, JWK *jwk2, bool skipPri)
 
 void *_did_jwk_json_generate(JWK *jwk)
 {
+    char fragment[32] = {0};
+
     if (NULL == jwk)
+        return NULL;
+
+    if (0 == jwk->key_id) 
         return NULL;
 
     cJSON *JWK_object = cJSON_CreateObject();  
@@ -169,6 +250,12 @@ void *_did_jwk_json_generate(JWK *jwk)
             }
 
             cJSON_AddStringToObject(JWK_object, "kty", "EC");
+
+            if (0 == strcmp(jwk->Params.ec.crv, "P-256"))
+                sprintf(fragment, "Key-p256-%d", jwk->key_id);
+            else
+                sprintf(fragment, "Key-%s-%d",jwk->Params.ec.crv, jwk->key_id);
+
             break;
         case JWKTYPE_Symmetric:
             cJSON_AddStringToObject(JWK_object, "kty", "OCT");
@@ -180,14 +267,11 @@ void *_did_jwk_json_generate(JWK *jwk)
             cJSON_AddStringToObject(JWK_object, "kty", "OCT");
             break;        
         default:
-            break;
+            goto exit;
     }
+   
+    cJSON_AddStringToObject(JWK_object, "kid", fragment);
 
-    if (jwk->key_id) {
-        char kid_str[32] = {0};
-        sprintf(kid_str, "Key-%d", jwk->key_id);
-        cJSON_AddStringToObject(JWK_object, "kid", kid_str);
-    }    
 
     return (void *)JWK_object;
 
@@ -218,23 +302,66 @@ char *iotex_jwk_serialize(JWK *jwk, bool format)
     return toStr;
 }
 
+char *iotex_jwk_generate_kid(char *method, JWK *jwk)
+{
+    char fragment[32] = {0};
+
+    if (NULL == jwk)
+        return NULL;
+
+    if (NULL == method)
+        return NULL;
+    
+    char *did = iotex_did_generate(method, jwk);
+    if (NULL == did)
+        return NULL;
+    
+    switch (jwk->type) {
+        case JWKTYPE_EC:
+    
+            if (jwk->Params.ec.crv[0]) {
+                if (0 == strcmp(jwk->Params.ec.crv, "P-256"))
+                    sprintf(fragment, "#Key-p256-%d", jwk->key_id);
+                else
+                    sprintf(fragment, "#Key-%s-%d",jwk->Params.ec.crv, jwk->key_id);
+            } else
+                sprintf(fragment, "#key-%d", jwk->key_id);
+    
+            break;
+        default:
+            return NULL;
+    }
+    
+    char *kid = calloc(strlen(did) + strlen(fragment) + 1, sizeof(char));
+    if (NULL == kid)
+        return NULL;
+    
+    kid =  strcat(strcat(kid, did), fragment);
+
+    free(did);
+
+    return kid;
+}
+
 void iotex_jwk_destroy(JWK *jwk)
 {
     if (NULL == jwk)
         return;
 
-    if (jwk->x509_url)
+    if (jwk->x509_url) 
         free(jwk->x509_url);
 
-    if (jwk->x509_certificate_chain)
+    if (jwk->x509_certificate_chain) 
         free(jwk->x509_certificate_chain);
 
     memset(jwk->x509_thumbprint_sha1,   0, sizeof(jwk->x509_thumbprint_sha1));
     memset(jwk->x509_thumbprint_sha256, 0, sizeof(jwk->x509_thumbprint_sha256));
 
-    memset((void *)&jwk->Params, 0, sizeof(jwk->Params));
+    memset(&jwk->Params, 0, sizeof(jwk->Params));
 
-    free(jwk);
+    psa_destroy_key(jwk->key_id);
+
+    free(jwk);  
 }
 
 jose_status_t iotex_pubkey_uncompress_convert_compress(const char *uncompress, char *compress)
@@ -252,9 +379,9 @@ jose_status_t iotex_pubkey_uncompress_convert_compress(const char *uncompress, c
     return JOSE_SUCCESS;
 }
 
-jose_status_t iotex_jwk_get_pubkey_from_jwk(JWK *jwk, char *outdata, uint32_t *outdata_len)
+jose_status_t iotex_jwk_get_pubkey_from_jwk(JWK *jwk, char *outdata, size_t *outdata_len)
 {
-    int x_outlen = 0, y_outlen = 0;;
+    size_t x_outlen = 0, y_outlen = 0;;
 
     if (NULL == jwk || NULL == outdata || NULL == outdata_len)
         return JOSE_ERROR_INVALID_ARGUMENT;
@@ -262,11 +389,10 @@ jose_status_t iotex_jwk_get_pubkey_from_jwk(JWK *jwk, char *outdata, uint32_t *o
     switch (jwk->type) {
         case JWKTYPE_EC:
         
-            outdata[0] = 0x04;
-            base64url_decode(jwk->Params.ec.x_coordinate, strlen(jwk->Params.ec.x_coordinate), outdata + 1, &x_outlen);
-            base64url_decode(jwk->Params.ec.y_coordinate, strlen(jwk->Params.ec.y_coordinate), outdata + 1 + 32, &y_outlen);
+            base64url_decode(jwk->Params.ec.x_coordinate, strlen(jwk->Params.ec.x_coordinate), outdata, &x_outlen);
+            base64url_decode(jwk->Params.ec.y_coordinate, strlen(jwk->Params.ec.y_coordinate), outdata + 32, &y_outlen);
         
-            *outdata_len = x_outlen + y_outlen + 1;
+            *outdata_len = x_outlen + y_outlen;
 
             return JOSE_SUCCESS;
     
@@ -299,7 +425,9 @@ static jose_status_t _jwk_psa_key_attributes_set(psa_key_attributes_t *attribute
     psa_set_key_lifetime(attributes, lifetime);
 
     if (IOTEX_JWK_LIFETIME_PERSISTENT == lifetime)
-        psa_set_key_id(attributes, key_id);          
+        psa_set_key_id(attributes, key_id); 
+
+    return JOSE_SUCCESS;         
 }
 
 JWK *iotex_jwk_generate(enum JWKType type, enum JWKSupportKeyAlg keyalg,
@@ -327,28 +455,7 @@ JWK *iotex_jwk_generate(enum JWKType type, enum JWKSupportKeyAlg keyalg,
             goto jwk_generater;
     }
 
-#if 0
-    psa_set_key_usage_flags(&attributes, key_usage);
-    psa_set_key_algorithm(&attributes, alg);
-
-    if (JWK_SUPPORT_KEY_ALG_P256 == keyalg) {
-        psa_set_key_type(&attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
-        psa_set_key_bits(&attributes, 256); 
-    } else if (JWK_SUPPORT_KEY_ALG_K256 == keyalg) {
-        psa_set_key_type(&attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_K1));
-        psa_set_key_bits(&attributes, 256); 
-    } else if ((JWK_SUPPORT_KEY_ALG_ED25519 == keyalg)) {
-        psa_set_key_type(&attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_TWISTED_EDWARDS));
-        psa_set_key_bits(&attributes, 512); 
-    }
-
-    psa_set_key_lifetime(&attributes, lifetime);
-
-    if (IOTEX_JWK_LIFETIME_PERSISTENT == lifetime)
-        psa_set_key_id(&attributes, *key_id);
-#else
     _jwk_psa_key_attributes_set(&attributes, keyalg, lifetime, key_usage, alg, *key_id);
-#endif        
     
     status = psa_generate_key(&attributes, key_id);
     if( status != PSA_SUCCESS )
@@ -363,7 +470,7 @@ jwk_generater:
         return NULL;
     memset(jwk, 0, sizeof(JWK));
 
-    int x_len, y_len;
+    size_t x_len, y_len;
     base64url_encode((char *)exported, 32, jwk->Params.ec.x_coordinate, &x_len);
     base64url_encode((char *)exported + 32, 32, jwk->Params.ec.y_coordinate, &y_len);
 
@@ -442,7 +549,7 @@ JWK* iotex_jwk_generate_by_secret(uint8_t *secret, unsigned int secret_size,
         return NULL;        
     memset(jwk, 0, sizeof(JWK));        
 
-    int x_len, y_len;
+    size_t x_len, y_len;
     base64url_encode((char *)exported, 32, jwk->Params.ec.x_coordinate, &x_len);
     base64url_encode((char *)exported + 32, 32, jwk->Params.ec.y_coordinate, &y_len);  
 
@@ -459,4 +566,26 @@ JWK* iotex_jwk_generate_by_secret(uint8_t *secret, unsigned int secret_size,
 
     return jwk;
 }
+
+psa_key_id_t iotex_jwk_get_psa_key_id_from_didurl(char *didurl)
+{
+    psa_key_id_t key_id = 0;
+
+    if (NULL == didurl)
+        return key_id;
+
+    int i = strlen(didurl) - 1;
+
+    for (; i > 0; --i) {
+        if (didurl[i] == '-')
+            break;
+    }
+
+    if (i)
+        key_id = atoi(didurl + i + 1);
+
+    return key_id;
+}
+
+
 

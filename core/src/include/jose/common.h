@@ -34,12 +34,17 @@ typedef int jose_status_t;
 #define JOSE_ERROR_INVALID_SIGNATURE     ((jose_status_t)-20)
 #define JOSE_ERROR_DEPENDENCY_NEEDED     ((jose_status_t)-21)
 #define JOSE_ERROR_CURRENTLY_INSTALLING  ((jose_status_t)-22)
-#define JOSE_ERROR_INTERNAL_COMPUTE      ((jose_status_t)-22)
+#define JOSE_ERROR_INTERNAL_COMPUTE      ((jose_status_t)-23)
+#define JOSE_ERROR_ENCRYPT_FAIL          ((jose_status_t)-24)
+#define JOSE_ERROR_DECRYPT_FAIL          ((jose_status_t)-25)
 
+#define JOSE_HEADER_TYPE_ENCRPT_TYPE        "application/didcomm-encrypted+json"        // DICOM_Standard_Committee
 #define JOSE_HEADER_TYPE_SIGN_TYPE          "application/didcomm-signed+json"           // DICOM_Standard_Committee
 #define JOSE_HEADER_TYPE_COMPACT            "JOSE"                                      // RFC 7515 (JWS)
 #define JOSE_HEADER_TYPE_JSON               "JOSE+JSON"                                 // RFC 7515 (JWS)
 #define JOSE_HEADER_TYPE_JWT                "JWT"                                       // RFC 7519 (JWT)
+
+#define JOSE_JWE_RECIPIENTS_MAX         4
 
 enum JWS_USAGE {
     JWS_USAGE_DIDCOMM,

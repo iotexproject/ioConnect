@@ -39,5 +39,6 @@ jws_handle_t iotex_jws_general_json_serialize_init(char *plaintext, size_t plain
 jose_status_t iotex_jws_general_json_serialize_update(jws_handle_t handle, enum JWAlogrithm alg, char *kid, JWK *jwk);
 char *iotex_jws_general_json_serialize_finish(jws_handle_t handle, bool format);
 char *iotex_jws_flattened_json_serialize(enum JWAlogrithm alg, char *plaintext, size_t plaintext_size, char *kid, enum JWS_USAGE usage, JWK *jwk, bool format);
+bool iotex_jws_compact_verify(enum JWAlogrithm alg, char *jws_msg, JWK *jwk);
 
 #endif

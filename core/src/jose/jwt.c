@@ -108,12 +108,36 @@ char *iotex_jwt_serialize(JWTClaim_handle handle, enum JWTType type, enum JWAlog
     if (NULL == jwt_claim_serialize)
         return NULL;
 
-    printf("jwt_claim_serialize : %s\n", jwt_claim_serialize);        
+    char *jwt_serialize = NULL;
 
-    char *jwt_serialize = iotex_jws_compact_serialize(alg, jwt_claim_serialize, strlen(jwt_claim_serialize), jwk);
+    switch (type) {
+        case JWT_TYPE_JWS:
+            jwt_serialize = iotex_jws_compact_serialize(alg, jwt_claim_serialize, strlen(jwt_claim_serialize), jwk);
+            break;
+        case JWT_TYPE_JWE:
+            break;
+        default:
+            break;
+    }
 
     free(jwt_claim_serialize);
 
     return jwt_serialize;
+}
+
+bool iotex_jwt_verify(char *jwt_serialize, enum JWTType type, enum JWAlogrithm alg, JWK *jwk)
+{
+    if (NULL == jwk || NULL == jwt_serialize)
+        return false;
+
+    switch (type) {
+        case JWT_TYPE_JWS:
+            return iotex_jws_compact_verify(alg, jwt_serialize, jwk);
+        case JWT_TYPE_JWE:
+        default:
+            return false;
+    }
+
+    return false;
 }
 
