@@ -554,9 +554,11 @@ inline int iotex_sha256_starts( iotex_sha256_context *ctx, int is224 )
 inline int iotex_sha256_update( iotex_sha256_context *ctx, const unsigned char *input, size_t ilen )
 {
 #ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
-    (void)tc_sha256_update ((TCSha256State_t)ctx->sha256_ctx, input, ilen);
+    int ret = tc_sha256_update ((TCSha256State_t)ctx->sha256_ctx, input, ilen);
+    if (TC_CRYPTO_FAIL == ret)
+        return PSA_ERROR_GENERIC_ERROR;
 
-    return 0;
+    return PSA_SUCCESS;
 #endif
 
 #ifdef PSA_CRYPTO_BACKENDS_MBEDTLS
@@ -567,9 +569,11 @@ inline int iotex_sha256_update( iotex_sha256_context *ctx, const unsigned char *
 inline int iotex_sha256_finish( iotex_sha256_context *ctx, unsigned char *output )
 {
 #ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
-    (void)tc_sha256_final(output, (TCSha256State_t)ctx->sha256_ctx);
+    int ret = tc_sha256_final(output, (TCSha256State_t)ctx->sha256_ctx);
+    if (TC_CRYPTO_FAIL == ret)
+        return PSA_ERROR_GENERIC_ERROR;
 
-    return 0;
+    return PSA_SUCCESS;
 #endif
 
 #ifdef PSA_CRYPTO_BACKENDS_MBEDTLS
@@ -1658,7 +1662,7 @@ void iotex_ccm_init( iotex_ccm_context *ctx )
 
 void iotex_ccm_free( iotex_ccm_context *ctx )
 {
-    return;
+    iotex_cipher_free( &ctx->cipher_ctx );
 }
 
 int iotex_ccm_setkey( iotex_ccm_context *ctx, iotex_cipher_id_t cipher, const unsigned char *key, unsigned int keybits )
@@ -2558,7 +2562,7 @@ int iotex_eddsa_sign( psa_key_type_t type,
 }
 
 
-inline int iotex_ecdsa_verify( psa_key_type_t type,
+int iotex_ecdsa_verify( psa_key_type_t type,
                           const uint8_t *key_buffer, size_t key_buffer_size,
                           const uint8_t *hash, size_t hash_length, uint8_t *signature, size_t signature_length )
 {
@@ -2566,12 +2570,6 @@ inline int iotex_ecdsa_verify( psa_key_type_t type,
     uint8_t public_key[2 * NUM_ECC_BYTES] = {0};
     int ret;
 
-#if 0
-    if( type == PSA_ECC_FAMILY_SECP_R1)
-        curve = uECC_secp256r1();
-    else
-        return PSA_ERROR_GENERIC_ERROR;
-#else
     switch( type )
     {
         case PSA_ECC_FAMILY_SECP_R1:
@@ -2586,13 +2584,11 @@ inline int iotex_ecdsa_verify( psa_key_type_t type,
             break;
         default:
             return PSA_ERROR_GENERIC_ERROR;
-    }
-#endif
+    }     
 
     uECC_compute_public_key(key_buffer, public_key, curve);
 
     ret = uECC_verify(public_key, hash, hash_length, signature, curve);
-
     if ( 0 == ret )
         return PSA_ERROR_GENERIC_ERROR;
 
