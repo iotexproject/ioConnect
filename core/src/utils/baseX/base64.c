@@ -43,7 +43,7 @@ static const unsigned char base64_decode_table[] = {
  * @param outlen            编码后输出的数据大小
  * @return  int             0：成功    -1：无效参数
  */
-int base64_encode(const char *indata, int inlen, char *outdata, int *outlen)
+int base64_encode(const char *indata, size_t inlen, char *outdata, size_t *outlen)
 {
     if(indata == NULL || inlen <= 0) {
         return -1;
@@ -89,7 +89,7 @@ int base64_encode(const char *indata, int inlen, char *outdata, int *outlen)
  * @return  int             0：成功    -1：无效参数
  * 注意：解码的数据的大小必须大于4，且是4的倍数
  */
-int base64_decode(const char *indata, int inlen, char *outdata, int *outlen)
+int base64_decode(const char *indata, size_t inlen, char *outdata, size_t *outlen)
 {
     if(indata == NULL || inlen <= 0 || (outdata == NULL && outlen == NULL)) {
         return -1;
@@ -122,7 +122,7 @@ int base64_decode(const char *indata, int inlen, char *outdata, int *outlen)
     return 0;
 }
 
-int base64url_encode(const char *indata, int inlen, char *outdata, int *outlen)
+int base64url_encode(const char *indata, size_t inlen, char *outdata, size_t *outlen)
 {
     int equals_sign = 0;
     int ret = 0;
@@ -147,8 +147,7 @@ int base64url_encode(const char *indata, int inlen, char *outdata, int *outlen)
     return 0;    
 }
 
-
-int base64url_decode(const char *indata, int inlen, char *outdata, int *outlen)
+int base64url_decode(const char *indata, size_t inlen, char *outdata, size_t *outlen)
 {
     int ret = 0;
     char *inbuf = NULL;
@@ -196,7 +195,7 @@ int base64url_decode(const char *indata, int inlen, char *outdata, int *outlen)
     return ret;
 }
 
-char * base64url_malloc(unsigned int *len)
+char * base64url_malloc(size_t *len)
 {
     unsigned int actual_len = 0;
 
@@ -233,10 +232,10 @@ char * base64url_malloc(unsigned int *len)
     return temp;        
 }
 
-char *base64_encode_automatic( unsigned char *buf, size_t buf_len )
+char *base64_encode_automatic( const char *buf, size_t buf_len )
 {
     char *encode = NULL;
-    int encoded_len = 0;  
+    size_t encoded_len = 0;  
 
     if (NULL == buf || 0 == buf_len)
         return NULL;
@@ -249,4 +248,26 @@ char *base64_encode_automatic( unsigned char *buf, size_t buf_len )
     base64url_encode(buf, buf_len, encode, &encoded_len); 
 
     return encode;   
+}
+
+char *base64_decode_automatic( const char *inbuf, size_t inbuf_len, size_t *out_len)
+{
+    char *decode = NULL;
+    int decode_len = 0, ret = 0;  
+
+    if (NULL == inbuf || 0 == inbuf_len)
+        return NULL;
+
+    decode = malloc(inbuf_len + 3);
+    if (NULL == decode)
+        return NULL;
+    memset(decode, 0, inbuf_len + 3);
+
+    ret = base64url_decode(inbuf, inbuf_len, decode, out_len);
+    if (ret) {
+        free(decode);
+        return NULL;
+    } 
+
+    return decode;   
 }
