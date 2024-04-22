@@ -92,8 +92,9 @@ did_status_t iotex_vc_destroy(vc_handle_t handle)
     memset(g_vc_info.vc, 0, sizeof(VerifiableCredential));
 
     free(g_vc_info.vc);
-    g_vc_info.vc = NULL;         
+    g_vc_info.vc = NULL;   
 
+    return DID_SUCCESS;      
 }
 
 static did_status_t _vc_sub_property_set(cJSON *object, unsigned int subtype, char *name, void *value)
@@ -384,7 +385,7 @@ char *iotex_vc_serialize(vc_handle_t handle, bool format)
         return NULL;
 
     if (g_vc_info.vc->contests.contexts) {
-        cJSON_AddItemToObject(vc_serialize_obj, "@context", g_vc_info.vc->contests.contexts);       // TODO:
+        cJSON_AddItemToObject(vc_serialize_obj, "@context", cJSON_Duplicate(g_vc_info.vc->contests.contexts, true));       // TODO:
     }
 
     if (g_vc_info.vc->id[0]) {
@@ -392,38 +393,38 @@ char *iotex_vc_serialize(vc_handle_t handle, bool format)
     }        
 
     if (g_vc_info.vc->types.typs)
-        cJSON_AddItemToObject(vc_serialize_obj, "type", g_vc_info.vc->types.typs);        
+        cJSON_AddItemToObject(vc_serialize_obj, "type", cJSON_Duplicate(g_vc_info.vc->types.typs, true));        
 
     if (g_vc_info.vc->css.css)
-        cJSON_AddItemToObject(vc_serialize_obj, "credentialSubject", g_vc_info.vc->css.css);
+        cJSON_AddItemToObject(vc_serialize_obj, "credentialSubject", cJSON_Duplicate(g_vc_info.vc->css.css, true));
 
     if (g_vc_info.vc->issuer.issuer)
-        cJSON_AddItemToObject(vc_serialize_obj, "issuer", g_vc_info.vc->issuer.issuer);             // TODO:
+        cJSON_AddItemToObject(vc_serialize_obj, "issuer", cJSON_Duplicate(g_vc_info.vc->issuer.issuer, true));             // TODO:
 
     if (g_vc_info.vc->issuance_date[0])
         cJSON_AddStringToObject(vc_serialize_obj, "issuanceDate", g_vc_info.vc->issuance_date);         
 
     if (g_vc_info.vc->proofs.proofs)
-        cJSON_AddItemToObject(vc_serialize_obj, "proof", g_vc_info.vc->proofs.proofs);              // TODO:         
+        cJSON_AddItemToObject(vc_serialize_obj, "proof", cJSON_Duplicate(g_vc_info.vc->proofs.proofs, true));              // TODO:         
 
     if (g_vc_info.vc->exp_date[0])
         cJSON_AddStringToObject(vc_serialize_obj, "expirationDate", g_vc_info.vc->id);
 
     if (g_vc_info.vc->status.status)
-        cJSON_AddItemToObject(vc_serialize_obj, "credentialStatus", g_vc_info.vc->status.status);
+        cJSON_AddItemToObject(vc_serialize_obj, "credentialStatus", cJSON_Duplicate(g_vc_info.vc->status.status, true));
 
     if (g_vc_info.vc->terms_of_use.termsofuse)
-        cJSON_AddItemToObject(vc_serialize_obj, "termsOfUse", g_vc_info.vc->terms_of_use.termsofuse);
+        cJSON_AddItemToObject(vc_serialize_obj, "termsOfUse", cJSON_Duplicate(g_vc_info.vc->terms_of_use.termsofuse, true));
 
     // https://www.w3.org/TR/2022/REC-vc-data-model-20220303/ Dont include this property.
     // if (g_vc_info.vc->schemas.schemas)
     //     cJSON_AddItemToObject(vc_serialize_obj, "termsOfUse", g_vc_info.vc->terms_of_use.termsofuse);
 
     if (g_vc_info.vc->refresh_services.rss)
-        cJSON_AddItemToObject(vc_serialize_obj, "refreshService", g_vc_info.vc->refresh_services.rss);
+        cJSON_AddItemToObject(vc_serialize_obj, "refreshService", cJSON_Duplicate(g_vc_info.vc->refresh_services.rss, true));
 
     if (g_vc_info.vc->property_set)
-        cJSON_AddItemToObject(vc_serialize_obj, "Property_set", g_vc_info.vc->property_set);
+        cJSON_AddItemToObject(vc_serialize_obj, "Property_set", cJSON_Duplicate(g_vc_info.vc->property_set, true));
 
     if (format)
         vc_serialize = cJSON_Print(vc_serialize_obj);
