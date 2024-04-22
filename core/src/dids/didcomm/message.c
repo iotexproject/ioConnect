@@ -1,5 +1,5 @@
 #include <string.h>
-#include "include/psa/crypto.h"
+#include "include/server/crypto.h"
 #include "include/dids/didcomm/message.h"
 #include "include/dids/didcomm/envelope.h"
 #include "include/dids/didcomm/encrypted.h"
@@ -612,11 +612,11 @@ char *didcomm_message_pack_signed(Message *message, char *sign_by, JWK *jwk)
     char *msg = NULL;
 
     char *base64url_header = NULL;
-    int  base64url_header_len;
+    size_t  base64url_header_len;
     char *base64url_payload = NULL;
-    int  base64url_payload_len;
+    size_t  base64url_payload_len;
     char *base64url_signature = NULL;
-    int  base64url_signature_len;    
+    size_t  base64url_signature_len;    
 
     unsigned char signature[64] = {0};
     size_t actual_len = 0;
@@ -719,12 +719,12 @@ static char *_authcrypt(char *msg, char *from, char *to, PackEncryptedOptions *o
     keyalg = iotex_jwk_get_key_alg(jwk);
     if (P256 == keyalg || K256 == keyalg) {
 
-        char * recipients[4] = {0};
+        char * recipients[JOSE_JWE_RECIPIENTS_MAX] = {0};
 
         // TODO: 
         recipients[0] = to;
-
-        auth_msg = iotex_jwe_encrypt(msg, Ecdh1puA256kw, A256cbcHs512, from, jwk, recipients);
+        
+        auth_msg = iotex_jwe_encrypt(msg, Ecdh1puA256kw, A256cbcHs512, from, jwk, recipients, false);
     }
 
     return auth_msg;
@@ -746,7 +746,7 @@ char *didcomm_message_pack_encrypted(Message *message, char *from, char *to, cha
         msg = didcomm_message_pack_plaintext(message);
     if (NULL == msg)
         return NULL;             
-    
+
     if (from)
         encrypted_msg = _authcrypt(msg, from, to, option, jwk);
     // else 
@@ -836,10 +836,8 @@ int message_encrypt_test(char *plaintext)
     status = psa_import_key( &attributes, secret1, 32, &wrap_id );  
     if (PSA_SUCCESS != status)
         return -3;
-    printf("wrap key id %d\n", wrap_id);
-
+    
     status = psa_cipher_encrypt(wrap_id, PSA_ALG_CBC_NO_PADDING, cekey, 32, wkey, 32 + 16, &wkey_len);
-    printf("psa_cipher_encrypt ret %d %d\n", status, wkey_len);
     if (PSA_SUCCESS != status)
         return -4;
     
