@@ -51,6 +51,7 @@ JWTClaim_handle iotex_jwt_claim_new(void);
 void iotex_jwt_claim_destroy(JWTClaim_handle handle);
 
 jose_status_t iotex_jwt_claim_set_value(JWTClaim_handle handle, enum JWTClaimType type, char *name, void *value);
+void * iotex_jwt_claim_get_value(char *jwt_serialize, enum JWTType jwt_type, enum JWTClaimType type, char *name);
 char *iotex_jwt_claim_serialize(JWTClaim_handle handle, bool format);
 char *iotex_jwt_serialize(JWTClaim_handle handle, enum JWTType type, enum JWAlogrithm alg, JWK *jwk);
 bool iotex_jwt_verify(char *jwt_serialize, enum JWTType type, enum JWAlogrithm alg, JWK *jwk);

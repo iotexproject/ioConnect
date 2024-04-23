@@ -319,7 +319,7 @@ exit_3:
     return jws_flattened_serialize;  
 }
 
-static jose_status_t _find_point_position(char *jws, uint32_t *first, uint32_t *second)
+jose_status_t _find_point_position(char *jws, uint32_t *first, uint32_t *second)
 {
     uint32_t idx = 0;
 

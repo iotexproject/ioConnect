@@ -168,6 +168,7 @@ typedef struct _VerifiableCredential {
 vc_handle_t iotex_vc_new(void);
 did_status_t iotex_vc_destroy(vc_handle_t handle);
 did_status_t iotex_vc_property_set(vc_handle_t handle, unsigned int build_type, char *name, void *value);
+void * iotex_vc_property_get(char *vc_serialize, unsigned int build_type, char *name, int idx);
 
 property_handle_t iotex_vc_sub_property_new(void);
 did_status_t iotex_vc_sub_property_destroy(property_handle_t handle);

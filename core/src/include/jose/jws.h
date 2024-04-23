@@ -41,4 +41,6 @@ char *iotex_jws_general_json_serialize_finish(jws_handle_t handle, bool format);
 char *iotex_jws_flattened_json_serialize(enum JWAlogrithm alg, char *plaintext, size_t plaintext_size, char *kid, enum JWS_USAGE usage, JWK *jwk, bool format);
 bool iotex_jws_compact_verify(enum JWAlogrithm alg, char *jws_msg, JWK *jwk);
 
+jose_status_t _find_point_position(char *jws, uint32_t *first, uint32_t *second);
+
 #endif
