@@ -385,7 +385,7 @@ static did_status_t _diddoc_sub_property_set(cJSON *object, unsigned int subtype
             cJSON_AddBoolToObject(object, name, *(cJSON_bool *)value);
             break;
         case IOTEX_DIDDOC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_JSON:
-            cJSON_AddItemToObject(object, name, (cJSON *)value);                             
+            cJSON_AddItemToObject(object, name, cJSON_Duplicate((cJSON *)value, true));                             
         default:
             return DID_ERROR_INVALID_ARGUMENT;
     }        

@@ -122,7 +122,7 @@ static did_status_t _vc_sub_property_set(cJSON *object, unsigned int subtype, ch
             cJSON_AddBoolToObject(object, name, *(cJSON_bool *)value);
             break;
         case IOTEX_VC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_JSON:
-            cJSON_AddItemToObject(object, name, (cJSON *)value);                             
+            cJSON_AddItemToObject(object, name, cJSON_Duplicate((cJSON *)value, true));                             
         default:
             return DID_ERROR_INVALID_ARGUMENT;
     }        

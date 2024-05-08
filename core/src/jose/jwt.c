@@ -73,7 +73,7 @@ jose_status_t iotex_jwt_claim_set_value(JWTClaim_handle handle, enum JWTClaimTyp
             cJSON_AddBoolToObject(handle->claim, name, *(cJSON_bool *)value);
             break;
         case JWT_CLAIM_TYPE_PRIVATE_JSON:
-            cJSON_AddItemToObject(handle->claim, name, (cJSON *)value);            
+            cJSON_AddItemToObject(handle->claim, name, cJSON_Duplicate((cJSON *)value, true));            
         
         default:
             return JOSE_ERROR_INVALID_ARGUMENT;            

@@ -63,9 +63,9 @@ uint8_t * iotex_deviceconnect_sdk_core_init(iotex_gettime get_time_func, iotex_m
     iotex_dev_access_set_mqtt_func(mqtt_pub, mqtt_sub);
 #endif
 
-    iotex_export_public_key();
+    // iotex_export_public_key();
 
-    InitLowsCalc();
+    // InitLowsCalc();
 
 #ifdef IOTEX_SIGN_VERIFY_TEST
     psa_status_t status;

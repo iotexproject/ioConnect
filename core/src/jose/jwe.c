@@ -256,9 +256,6 @@ char *iotex_jwe_encrypt_protected(enum KWAlgorithms KwAlg, enum EncAlgorithm enA
     if (apv)
         free(apv);
 
-    // if (protected.epk)
-    //     cJSON_Delete((cJSON *)protected.epk);
-
     if (protected_json)
         free(protected_json);
 
