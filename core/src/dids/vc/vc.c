@@ -186,6 +186,7 @@ static void * _vc_sub_property_get(cJSON *object, unsigned int subtype, char *na
             if (NULL == private_json || !cJSON_IsObject(private_json))
                 break;
               
+            value = malloc(sizeof(cJSON *)); 
             value = (void *)cJSON_Duplicate(private_json, cJSON_True);                                                
         default:
             return NULL;
