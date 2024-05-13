@@ -159,46 +159,6 @@ int iotex_dids_get_agreement_key(char *did, uint8_t *out, size_t *out_size)
     return 0;        
 }
 
-char *iotex_dids_get_default(char *did, JWK *jwk)
-{
-    char did_buf[128] = {0};
-
-    if (NULL == did)
-        return NULL;
-
-    cJSON *diddoc = cJSON_CreateObject();
-
-    cJSON *contexts = cJSON_CreateArray();
-
-    cJSON_AddItemToArray(contexts, cJSON_CreateString("https://www.w3.org/ns/did/v1"));    
-    cJSON_AddItemToArray(contexts, cJSON_CreateString("https://w3id.org/security#keyAgreementMethod"));
-    cJSON_AddItemToObject(diddoc, "@context", contexts);
-
-    cJSON_AddStringToObject(diddoc, "id", did);
-
-    cJSON *key_agreements = cJSON_CreateArray();
-    memcpy(did_buf, did, strlen(did));
-    memcpy(did_buf + strlen(did), "#key-p256-1", strlen("#key-p256-1"));
-    cJSON_AddItemToArray(key_agreements, cJSON_CreateString(did_buf));
-    cJSON_AddItemToObject(diddoc, "keyAgreement", key_agreements);
-
-    cJSON *verification_methods = cJSON_CreateArray();
-
-    cJSON *vm_p256_1 = cJSON_CreateObject();
-    cJSON_AddStringToObject(vm_p256_1, "id", did_buf);
-    cJSON_AddStringToObject(vm_p256_1, "type", "JsonWebKey2020");
-    cJSON_AddStringToObject(vm_p256_1, "conttroller", did);
-    cJSON_AddItemToObject(vm_p256_1, "publicKeyJwk", (cJSON *)_did_jwk_json_generate(jwk));
-
-    cJSON_AddItemToArray(verification_methods, vm_p256_1);
-
-    cJSON_AddItemToObject(diddoc, "verificationMethod", verification_methods);
-
-    // return cJSON_PrintUnformatted(diddoc);
-    return cJSON_Print(diddoc);
-
-}
-
 static void *_build_diddoc_service_object(DIDDoc_Service *service)
 {
     size_t array_size = 0;
@@ -252,6 +212,51 @@ next:
 DIDDoc* iotex_diddoc_new(void)
 {
     return calloc(sizeof(DIDDoc), sizeof(char));
+}
+
+void iotex_diddoc_destroy(DIDDoc *doc)
+{
+    if (NULL == doc)
+        return;
+
+    if (doc->contexts.contexts)
+        cJSON_Delete(doc->contexts.contexts);
+
+    if (doc->aka.alsoKnownAs) 
+        cJSON_Delete(doc->aka.alsoKnownAs);
+
+    if (doc->cons.controllers)
+        cJSON_Delete(doc->cons.controllers);
+
+    if (doc->vm.vm)
+        cJSON_Delete(doc->vm.vm);
+
+    if (doc->auth.vm)
+        cJSON_Delete(doc->auth.vm);
+
+    if (doc->assertion.vm)
+        cJSON_Delete(doc->assertion.vm);
+
+    if (doc->keyagreement.vm)
+        cJSON_Delete(doc->keyagreement.vm);
+
+    if (doc->ci.vm)
+        cJSON_Delete(doc->ci.vm);
+
+    if (doc->cd.vm)
+        cJSON_Delete(doc->cd.vm);
+
+    if (doc->publickey.vm)
+        cJSON_Delete(doc->publickey.vm);
+
+    if (doc->services.Services)
+        cJSON_Delete(doc->services.Services);
+
+    if (doc->property_set)
+        cJSON_Delete(doc->property_set);
+
+    free(doc);
+
 }
 
 DIDDoc_VerificationMethod* iotex_diddoc_verification_method_new(DIDDoc* diddoc, enum VerificationMethod_Purpose purpose, enum VerificationMethod_Type type)
@@ -562,40 +567,40 @@ char *iotex_diddoc_serialize(DIDDoc *diddoc, bool format)
         return NULL;
 
     if (diddoc->contexts.contexts)
-        cJSON_AddItemToObject(diddoc_obj, "@context", diddoc->contexts.contexts);       // TODO:
+        cJSON_AddItemToObject(diddoc_obj, "@context", IOTEX_DIDDOC_PROPERTY_DUPLICATE(diddoc->contexts.contexts));
 
     if (diddoc->id[0])
         cJSON_AddStringToObject(diddoc_obj, "id", diddoc->id);
 
     if (diddoc->aka.alsoKnownAs)
-        cJSON_AddItemToObject(diddoc_obj, "alsoKnownAs", diddoc->aka.alsoKnownAs);        
+        cJSON_AddItemToObject(diddoc_obj, "alsoKnownAs", IOTEX_DIDDOC_PROPERTY_DUPLICATE(diddoc->aka.alsoKnownAs));        
 
     if (diddoc->cons.controllers)
-        cJSON_AddItemToObject(diddoc_obj, "controller", diddoc->cons.controllers);
+        cJSON_AddItemToObject(diddoc_obj, "controller", IOTEX_DIDDOC_PROPERTY_DUPLICATE(diddoc->cons.controllers));
 
     if (diddoc->auth.vm)
-        cJSON_AddItemToObject(diddoc_obj, "authentication", diddoc->auth.vm);
+        cJSON_AddItemToObject(diddoc_obj, "authentication", IOTEX_DIDDOC_PROPERTY_DUPLICATE(diddoc->auth.vm));
 
     if (diddoc->assertion.vm)
-        cJSON_AddItemToObject(diddoc_obj, "assertionMethod", diddoc->assertion.vm);
+        cJSON_AddItemToObject(diddoc_obj, "assertionMethod", IOTEX_DIDDOC_PROPERTY_DUPLICATE(diddoc->assertion.vm));
 
     if (diddoc->keyagreement.vm)
-        cJSON_AddItemToObject(diddoc_obj, "keyAgreement", diddoc->keyagreement.vm);
+        cJSON_AddItemToObject(diddoc_obj, "keyAgreement", IOTEX_DIDDOC_PROPERTY_DUPLICATE(diddoc->keyagreement.vm));
 
     if (diddoc->ci.vm)
-        cJSON_AddItemToObject(diddoc_obj, "capabilityInvocation", diddoc->ci.vm);
+        cJSON_AddItemToObject(diddoc_obj, "capabilityInvocation", IOTEX_DIDDOC_PROPERTY_DUPLICATE(diddoc->ci.vm));
 
     if (diddoc->cd.vm)
-        cJSON_AddItemToObject(diddoc_obj, "capabilityDelegation", diddoc->cd.vm);
+        cJSON_AddItemToObject(diddoc_obj, "capabilityDelegation", IOTEX_DIDDOC_PROPERTY_DUPLICATE(diddoc->cd.vm));
 
     if (diddoc->publickey.vm)
-        cJSON_AddItemToObject(diddoc_obj, "capabilityDelegation", diddoc->publickey.vm); 
+        cJSON_AddItemToObject(diddoc_obj, "capabilityDelegation", IOTEX_DIDDOC_PROPERTY_DUPLICATE(diddoc->publickey.vm)); 
 
     if (diddoc->vm.vm)
-        cJSON_AddItemToObject(diddoc_obj, "verificationMethod", diddoc->vm.vm);               
+        cJSON_AddItemToObject(diddoc_obj, "verificationMethod", IOTEX_DIDDOC_PROPERTY_DUPLICATE(diddoc->vm.vm));               
 
     if (diddoc->property_set)
-        cJSON_AddItemToObject(diddoc_obj, "private", diddoc->property_set);
+        cJSON_AddItemToObject(diddoc_obj, "private", IOTEX_DIDDOC_PROPERTY_DUPLICATE(diddoc->property_set));
 
     if (format)
         diddoc_serialize = cJSON_Print(diddoc_obj);
@@ -685,7 +690,7 @@ DIDDoc *iotex_diddoc_parse(char *diddoc_serialize)
 
     diddoc->contexts.contexts = IOTEX_DIDDOC_PROPERTY_DUPLICATE(cJSON_GetObjectItem(diddoc_obj, "@context"));
 
-    cJSON *id_item = IOTEX_DIDDOC_PROPERTY_DUPLICATE(cJSON_GetObjectItem(diddoc_obj, "id"));
+    cJSON *id_item = cJSON_GetObjectItem(diddoc_obj, "id");
     if (id_item && cJSON_IsString(id_item) && (strlen(id_item->valuestring) < IOTEX_DIDDOC_PROPERTY_ID_BUFFER_SIZE))
         strcpy(diddoc->id,  id_item->valuestring);
 
@@ -695,8 +700,8 @@ DIDDoc *iotex_diddoc_parse(char *diddoc_serialize)
     for (int i = (int)VM_PURPOSE_VERIFICATION_METHOD; i < (int)VM_PURPOSE_MAX; i++)
         _diddoc_verification_method_parse(diddoc, diddoc_obj, (enum VerificationMethod_Purpose)i);    
 
-    diddoc->services.Services = cJSON_GetObjectItem(diddoc_obj, "service");
-    diddoc->property_set      = cJSON_GetObjectItem(diddoc_obj, "private");
+    diddoc->services.Services = IOTEX_DIDDOC_PROPERTY_DUPLICATE(cJSON_GetObjectItem(diddoc_obj, "service"));
+    diddoc->property_set      = IOTEX_DIDDOC_PROPERTY_DUPLICATE(cJSON_GetObjectItem(diddoc_obj, "private"));
 
 exit:
     if (diddoc_obj)

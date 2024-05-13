@@ -298,9 +298,10 @@ char* verification_relationship_to_str(enum VerificationRelationship ship);
 char* verification_relationship_to_iri(enum VerificationRelationship ship);
 
 char* iotex_did_generate(char *name, JWK *jwk);
-char *iotex_dids_get_default(char *did, JWK *jwk);
 
 DIDDoc* iotex_diddoc_new(void);
+void iotex_diddoc_destroy(DIDDoc *doc);
+
 DIDDoc_VerificationMethod* iotex_diddoc_verification_method_new(DIDDoc* diddoc, enum VerificationMethod_Purpose purpose, enum VerificationMethod_Type type);
 VerificationMethod_Map iotex_diddoc_verification_method_map_new(void);
 did_status_t iotex_diddoc_verification_method_map_set(VerificationMethod_Map map, unsigned int build_type, void *value);
