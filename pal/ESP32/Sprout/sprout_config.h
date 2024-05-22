@@ -6,11 +6,13 @@
 
 #define IOTEX_SPROUT_COMMUNICATE_TYPE       SPROUT_COMMUNICATE_TYPE_DID
 
-#define IOTEX_SPROUT_HTTP_HOST              "sprout-staging.w3bstream.com"
-#define IOTEX_SPROUT_HTTP_PORT              9000
-#define IOTEX_SPROUT_HTTP_TIMEOUT           3000
-#define IOTEX_SPROUT_HTTP_PATH_MESSAGE      "/message"
-#define IOTEX_SPROUT_HTTP_PATH_CREDENTIAL   "/sign_credential"
+//#define IOTEX_SPROUT_HOST "sprout-staging.w3bstream.com"
+#define IOTEX_SPROUT_HTTP_HOST                  "192.168.1.227"
+#define IOTEX_SPROUT_HTTP_PORT                  9000
+#define IOTEX_SPROUT_HTTP_TIMEOUT               5000
+#define IOTEX_SPROUT_HTTP_PATH_MESSAGE          "/message"
+#define IOTEX_SPROUT_HTTP_PATH_REQUEST_TOKEN    "/issue_vc"
+#define IOTEX_SPROUT_HTTP_PATH_GET_DIDDOC       "/didDoc"
 
 #endif
 
