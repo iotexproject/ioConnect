@@ -1,12 +1,12 @@
 #include "device_connect.h"
 
-int iotex_device_connect_init(void) {
+int iotex_ioconnect_sdk_init(void) {
 
     default_SetSeed(esp_random());
     iotex_deviceconnect_sdk_core_init(time, iotex_mqtt_pubscription, iotex_mqtt_subscription);
 
-    iotex_ws_comm_init();
-    iotex_upload_data_init();    
+    // iotex_ws_comm_init();
+    // iotex_upload_data_init();    
 
     return 0;
 }

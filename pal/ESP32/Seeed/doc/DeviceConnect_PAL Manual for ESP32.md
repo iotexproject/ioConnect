@@ -65,7 +65,7 @@ In the `main.c` file of your ESP32 project, add the following code to initialize
 #include "device_connect.h"
 
 void app_main() {
-    iotex_device_connect_init();
+    iotex_ioconnect_sdk_init();
     // ...
 }
 ```
