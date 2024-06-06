@@ -20,9 +20,7 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
-#include "DeviceConnect_Core.h"                         // "ioConnectCore.h"
-// #include "DeviceConnect_PAL/Sprout/sprout.h"
-// #include "DeviceConnect_PAL/DeviceRegister/deviceregister.h"
+#include "DeviceConnect_Core.h"                        
 
 /* The examples use WiFi configuration that you can set via project configuration menu
 
@@ -170,7 +168,10 @@ void app_main(void)
     wifi_init_sta();
 
     //************************ Step.0 ioConnect SDK initialization ************************//
-    iotex_ioconnect_sdk_init();
+    default_SetSeed(esp_random());
+    psa_status_t status = psa_crypto_init();
+    if (PSA_SUCCESS != status)
+        return 0;    
 
     //************************ STEP. 1 ******************************//
     // Generate my own two JWKs 
