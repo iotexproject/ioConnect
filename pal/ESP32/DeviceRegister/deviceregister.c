@@ -5,7 +5,10 @@
 
 #include "esp_console.h"
 #include "esp_log.h"
+
+#if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_HTTPS)
 #include "esp_https_server.h"
+#endif
 
 #include "include/jose/jose.h"
 #include "include/dids/dids.h"
@@ -240,6 +243,7 @@ exit:
     return sign_serialize;
 }
 
+#if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_HTTPS)
 static esp_err_t did_get_handler(httpd_req_t *req)
 {
     char*  buf;
@@ -433,7 +437,9 @@ static void _pal_sprout_webserver_secure_start(void)
     httpd_register_uri_handler(server, &sign_options);
 
 }
+#endif
 
+#if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_SERIAL)
 static void _sprout_device_register_serial_task(void *p_arg)
 {
     char buffer[128] = {0};
@@ -477,6 +483,7 @@ static void _sprout_device_register_serial_task(void *p_arg)
 
     vTaskDelete(NULL);
 }
+#endif
 
 static void _pal_sprout_upload_init(void)
 {
@@ -487,7 +494,7 @@ static void _pal_sprout_upload_init(void)
         free(upload_diddoc);
 }
 
-void iotex_pal_sprout_device_register_start(char *did, char *diddoc, device_register_mode mode)
+void iotex_pal_sprout_device_register_start(char *did, char *diddoc)
 {
     if (NULL == did || NULL == diddoc)
         return;
@@ -497,10 +504,11 @@ void iotex_pal_sprout_device_register_start(char *did, char *diddoc, device_regi
     upload_did    = iotex_pal_device_register_did_upload_prepare(did, 1);
     upload_diddoc = iotex_pal_device_register_diddoc_upload_prepare(diddoc, 1);
 
-    if (mode == PAL_SPROUT_DEVICE_REGISTER_MODE_SERIAL)
+#if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_SERIAL)
         xTaskCreate(_sprout_device_register_serial_task, "device_register_task", 1024 * 5, NULL, 10, &pxCreatedTask);
-    else if (mode == PAL_SPROUT_DEVICE_REGISTER_MODE_HTTPS)
+#elif (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_HTTPS)
         _pal_sprout_webserver_secure_start();
+#endif        
 
 }
 
