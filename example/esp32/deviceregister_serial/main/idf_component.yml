@@ -1,0 +1,8 @@
+## IDF Component Manager Manifest File
+dependencies:
+  core:
+    version: "*"
+    override_path: "../../../../core"
+
+
+
