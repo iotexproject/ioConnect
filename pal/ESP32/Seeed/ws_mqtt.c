@@ -329,7 +329,7 @@ int iotex_mqtt_pubscription(unsigned char *topic, unsigned char *buf, unsigned i
 
 int iotex_mqtt_subscription(unsigned char *topic)
 {
-    return esp_mqtt_client_subscribe(mqtt_client, (const char *)topic, 0);
+    return esp_mqtt_client_subscribe(mqtt_client, (char *)topic, 0);
 }
 
 void ws_mqtt_app_server_start(void)
