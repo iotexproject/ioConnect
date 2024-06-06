@@ -9,4 +9,5 @@ file(GLOB PAL_DEVICE_REGISTER_SOURCES ${PAL_DEVICE_REGISTER_DIR}/*.c)
 set(PAL_SRC ${PAL_SPROUT_SOURCES} ${PAL_DEVICE_REGISTER_SOURCES})
 
 idf_component_register(SRCS "ioConnect_main.c" "tcp_client_v4.c" ${PAL_SRC}
-                    INCLUDE_DIRS "." ${PAL_HEAD_PATH})
+                    INCLUDE_DIRS "." ${PAL_HEAD_PATH}
+                    EMBED_TXTFILES "certs/servercert.pem" "certs/prvtkey.pem")
