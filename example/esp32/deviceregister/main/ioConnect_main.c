@@ -169,9 +169,7 @@ void app_main(void)
 
     //********************** Step.0  ioConnect SDK initialization ***************************//
     default_SetSeed(esp_random());
-    psa_status_t status = psa_crypto_init();
-    if (PSA_SUCCESS != status)
-        return 0;  
+    iotex_deviceconnect_sdk_core_init(NULL, NULL, NULL);
 
     //********************** Step.1  Generate the JWK for the device ************************//
     unsigned int key_id = 1;    
