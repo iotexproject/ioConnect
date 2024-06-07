@@ -1,11 +1,20 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-S2 | ESP32-S3 |
-| ----------------- | ----- | -------- | -------- | -------- | -------- |
+| Supported Targets | ESP32-S3 |
+| ----------------- | -------- |
 
-# Wi-Fi Station Example
+# Device Register Example
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+This example shows how to use the device register of the ioConnect SDK  for registering to the IoTeX .
 
-This example shows how to use the Wi-Fi Station functionality of the Wi-Fi driver of ESP for connecting to an Access Point.
+
+
+## What this example does
+
+- Generate a JWK with a lifetime of persist for the device.
+- Generate the device's DID based on this JWK.
+- Generate the device’s DIDdoc based on this JWK and DID.
+- Communicates with https://web-wallet-v2.onrender.com/ioid and automatically completes device registration.
+
+
 
 ## How to use example
 
@@ -15,9 +24,9 @@ Open the project configuration menu (`idf.py menuconfig`).
 
 In the `Example Configuration` menu:
 
-* Set the Wi-Fi configuration.
-    * Set `WiFi SSID`.
-    * Set `WiFi Password`.
+- Set the Wi-Fi configuration.
+  - Set `WiFi SSID`.
+  - Set `WiFi Password`.
 
 Optional: If you need, change the other options according to your requirements.
 
@@ -32,8 +41,12 @@ Run `idf.py -p PORT flash monitor` to build, flash and monitor the project.
 See the Getting Started Guide for all the steps to configure and use the ESP-IDF to build projects.
 
 * [ESP-IDF Getting Started Guide on ESP32](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html)
+
 * [ESP-IDF Getting Started Guide on ESP32-S2](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/get-started/index.html)
+
 * [ESP-IDF Getting Started Guide on ESP32-C3](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c3/get-started/index.html)
+
+  
 
 ## Example Output
 Note that the output, in particular the order of the output, may vary depending on the environment.
@@ -69,6 +82,55 @@ I (1029) wifi: AP's beacon interval = 102400 us, DTIM period = 3
 I (2089) esp_netif_handlers: sta ip: 192.168.77.89, mask: 255.255.255.0, gw: 192.168.77.1
 I (2089) wifi station: got ip:192.168.77.89
 I (2089) wifi station: connected to ap SSID:myssid password:mypassword
+
+JWK[Sign] : 
+{
+        "crv":  "secp256k1",
+        "x":    "KAkqUSARxKvyrfkykUH9fl5Ef6AbcaoEWQgi8IwFdIo",
+        "y":    "dmlXLytvKgIVH4hgPP2Tzlp6dJbq5KWtluiX1U1v9o0",
+        "kty":  "EC",
+        "kid":  "Key-secp256k1-1"
+}
+JWK[KA] : 
+{
+        "crv":  "P-256",
+        "x":    "WIbBzvEz-6beOyvZtVmtN9J1EvPlgKUPDTPZy3kJJnk",
+        "y":    "OvsnblaTwctIM2tP3pu8kh2RxpXxIwwtNceM4Z9iKcI",
+        "kty":  "EC",
+        "kid":  "Key-p256-2"
+}
+DID :
+did:io:0xba80b710f0c27c8b3b72df63861e2ecea9c5aa73
+DIDdoc [1125] :
+{
+        "@context":     ["https://www.w3.org/ns/did/v1", "https://w3id.org/security#keyAgreementMethod"],
+        "id":   "did:io:0xba80b710f0c27c8b3b72df63861e2ecea9c5aa73",
+        "authentication":       ["did:io:0xba80b710f0c27c8b3b72df63861e2ecea9c5aa73#Key-secp256k1-1"],
+        "keyAgreement": ["did:io:0xfab99326ce27d0d30b8609e6d4d748629242b077#Key-p256-2"],
+        "verificationMethod":   [{
+                        "id":   "did:io:0xba80b710f0c27c8b3b72df63861e2ecea9c5aa73#Key-secp256k1-1",
+                        "type": "JsonWebKey2020",
+                        "controller":   "did:io:0xba80b710f0c27c8b3b72df63861e2ecea9c5aa73",
+                        "publicKeyJwk": {
+                                "crv":  "secp256k1",
+                                "x":    "KAkqUSARxKvyrfkykUH9fl5Ef6AbcaoEWQgi8IwFdIo",
+                                "y":    "dmlXLytvKgIVH4hgPP2Tzlp6dJbq5KWtluiX1U1v9o0",
+                                "kty":  "EC",
+                                "kid":  "Key-secp256k1-1"
+                        }
+                }, {
+                        "id":   "did:io:0xfab99326ce27d0d30b8609e6d4d748629242b077#Key-p256-2",
+                        "type": "JsonWebKey2020",
+                        "controller":   "did:io:0xba80b710f0c27c8b3b72df63861e2ecea9c5aa73",
+                        "publicKeyJwk": {
+                                "crv":  "P-256",
+                                "x":    "WIbBzvEz-6beOyvZtVmtN9J1EvPlgKUPDTPZy3kJJnk",
+                                "y":    "OvsnblaTwctIM2tP3pu8kh2RxpXxIwwtNceM4Z9iKcI",
+                                "kty":  "EC",
+                                "kid":  "Key-p256-2"
+                        }
+                }]
+}
 ```
 
 Console output if the station failed to connect to AP:
@@ -118,4 +180,4 @@ I (10299) wifi station: Failed to connect to SSID:myssid, password:mypassword
 
 ## Troubleshooting
 
-For any technical queries, please open an [issue](https://github.com/espressif/esp-idf/issues) on GitHub. We will get back to you soon.
+For any technical queries, please open an [issue](https://github.com/machinefi/ioConnect/issues) on GitHub. We will get back to you soon.
