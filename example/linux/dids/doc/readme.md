@@ -1,6 +1,6 @@
 - #### Copy the entire `core` directory from the `SDK` directory to the current directory.
 
-  ![core](.\image\core.png)
+  ![core](./image/core.png)
 
 - #### Enter to the `core/src/include/config` directory.
 
