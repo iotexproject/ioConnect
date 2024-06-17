@@ -43,6 +43,11 @@ In the file structure of the Platform Adaptation Layer (PAL), the SDK mainly imp
 
 ## Usage
 
+### 	How to Generate a DID for a device
+
+Please view the documentation : **[How to Generate a DID for a device Using ioConnect SDK](./doc/How_to_Generate_a_DID_for_a_device_Using_ioConnectSDK.md)**
+
+
 ### 	How to Generate a DIDDoc
 
 Please view the documentation : **[How to Generate a DID Document Using ioConnect SDK](./doc/How_to_Generate_a_DID_Document_Using_ioConnectSDK.md)**
