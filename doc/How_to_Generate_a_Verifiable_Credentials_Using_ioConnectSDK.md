@@ -267,7 +267,11 @@ VC :
 
 
 
+## Reference Documentation
 
+[Verifiable Credentials Data Model v1.1 (w3.org)](https://www.w3.org/TR/vc-data-model/)
+
+[Verifiable Credentials Data Model v2.0 (w3.org)](https://www.w3.org/TR/vc-data-model-2.0/)
 
 
 
