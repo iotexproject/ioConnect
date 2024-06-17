@@ -52,5 +52,9 @@ Please view the documentation : **[How to Generate a DID for a device Using ioCo
 
 Please view the documentation : **[How to Generate a DID Document Using ioConnect SDK](./doc/How_to_Generate_a_DID_Document_Using_ioConnectSDK.md)**
 
+### 	How to Generate a Verifiable Credentials
+
+Please view the documentation : **[How to Generate a Verifiable Credentials Using ioConnect SDK](./doc/How_to_Generate_a_Verifiable_Credentials_Using_ioConnectSDK.md)**
+
 
 
