@@ -58,7 +58,7 @@ Please view the documentation : **[How to Generate a Verifiable Credentials Usin
 
 ## PAL Usage
 
-### 	How to Register a Device to [Wa](https://wallet.iotex.io/ioid)
+### 	How to Register a Device to [ioid](https://wallet.iotex.io/ioid)
 
 Please view the documentation : **[How to Register a Device](./doc/Device_Registration.md)**
 
