@@ -28,27 +28,27 @@ An embedded SDK for connecting smart devices to Web3
 
 ## Build
 
+### 	ESP32 :
+
+​			**[How to Create a Project on the ESP32 Platform](./doc/How_to_Create_a_Project_on_the_ESP32_Platform.md)**		
+
+### 	Linux:
+
+​			**[How to Create a Project on the Linux](./doc/How_to_Create_a_Project_on_the_Linux.md)**
+
+### 	Windows:
+
+​			**[How to Create a Project on the Windows](./doc/How_to_Create_a_Project_on_the_Windows.md)**
 
 
-### ESP32 :
-
-**[How to Create a Project on the ESP32 Platform](./doc/How_to_Create_a_Project_on_the_ESP32_Platform.md)**		
-
-### Linux:
-
-**[How to Create a Project on the Linux](./doc/How_to_Create_a_Project_on_the_Linux.md)**
-
-### Windows:
-
-**[How to Create a Project on the Windows](./doc/How_to_Create_a_Project_on_the_Windows.md)**
 
 
 
 ## Usage
 
-### How to Generate a DIDDoc
+### 	How to Generate a DIDDoc
 
-​	Please view the documentation : **[How to Generate a DID Document Using ioConnect SDK](./doc/How_to_Generate_a_DID_Document_Using_ioConnectSDK.md)**
+​			Please view the documentation : **[How to Generate a DID Document Using ioConnect SDK](./doc/How_to_Generate_a_DID_Document_Using_ioConnectSDK.md)**
 
 
 
