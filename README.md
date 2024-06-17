@@ -56,5 +56,10 @@ Please view the documentation : **[How to Generate a DID Document Using ioConnec
 
 Please view the documentation : **[How to Generate a Verifiable Credentials Using ioConnect SDK](./doc/How_to_Generate_a_Verifiable_Credentials_Using_ioConnectSDK.md)**
 
+## PAL Usage
+
+### 	How to Register a Device to [Wa](https://wallet.iotex.io/ioid)
+
+Please view the documentation : **[How to Register a Device](./doc/Device_Registration.md)**
 
 
