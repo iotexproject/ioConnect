@@ -41,7 +41,7 @@ In the file structure of the Platform Adaptation Layer (PAL), the SDK mainly imp
 **[How to Create a Project on the Windows](./doc/How_to_Create_a_Project_on_the_Windows.md)**
 
 
-## Usage
+## Core Usage
 
 ### 	How to Generate a DID for a device
 
@@ -61,5 +61,9 @@ Please view the documentation : **[How to Generate a Verifiable Credentials Usin
 ### 	How to Register a Device to [ioid](https://wallet.iotex.io/ioid)
 
 Please view the documentation : **[How to Register a Device](./doc/Device_Registration.md)**
+
+### 	How to Communicate with Sprout
+
+Please view the documentation : **[How to Communicate with Sprout](./doc/Communicating_with_Sprout.md)**
 
 
