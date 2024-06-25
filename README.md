@@ -14,7 +14,7 @@ In the file structure of the Core Layer:
 
 The `psa` and `crypto` folders primarily implement the Platform Security Architecture (PSA), which allows developers to use standardized and unified APIs to handle cryptography-related functions without concerning themselves with specific code implementation.
 
-​The `dids` folder mainly implements the functionality of the DID, DIDComm, and Verifiable Credential protocols, making it convenient for developers to handle operations related to these protocols. For example, developers can easily generate DID and DIDDoc information for their devices by calling methods provided by the DID component. They can also communicate with other devices using the DIDComm component.
+The `dids` folder mainly implements the functionality of the DID, DIDComm, and Verifiable Credential protocols, making it convenient for developers to handle operations related to these protocols. For example, developers can easily generate DID and DIDDoc information for their devices by calling methods provided by the DID component. They can also communicate with other devices using the DIDComm component.
 
 The `jose` folder mainly implements the JOSE protocol suite, including JWK, JWS, JWE, and others.
 
@@ -56,6 +56,14 @@ Please view the documentation : **[How to Generate a DID Document Using ioConnec
 
 Please view the documentation : **[How to Generate a Verifiable Credentials Using ioConnect SDK](./doc/How_to_Generate_a_Verifiable_Credentials_Using_ioConnectSDK.md)**
 
+### 	How to Generate a JWS
+
+Please view the documentation : **[How_to generate_a_JWS](./doc/How_to_use_the_ioConnectSDK_to_generate_a_JWS_Serialization.md)**
+
+### 	How to Generate a JWE
+
+Please view the documentation : **[How_to generate_a_JWE](./doc/How_to_use_the_ioConnectSDK_to_generate_a_JWE_Serialization.md)**
+
 ## PAL Usage
 
 ### 	How to Register a Device to [ioid](https://wallet.iotex.io/ioid)
@@ -65,5 +73,4 @@ Please view the documentation : **[How to Register a Device](./doc/Device_Regist
 ### 	How to Communicate with Sprout
 
 Please view the documentation : **[How to Communicate with Sprout](./doc/Communicating_with_Sprout.md)**
-
 
