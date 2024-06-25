@@ -37,7 +37,7 @@ BASE64URL(UTF8(JWE Protected Header)) || ’.’ ||
  BASE64URL(JWE Encrypted Key) || ’.’ ||
  BASE64URL(JWE Initialization Vector) || ’.’ ||
  BASE64URL(JWE Ciphertext) || ’.’ ||
- BASE64URL(JWE Authentication Tag)
+ BASE64URL(JWE Authentication Tag)
 $$
 
 ### JWE JSON Serialization Overview
