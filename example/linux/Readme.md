@@ -37,3 +37,6 @@ This example can be run on any commonly available Linux development board.
 
 
 
+# Usage
+
+Please view the documentation : **[Compile & Build](./dids/doc/readme.md)**
