@@ -64,6 +64,10 @@ Please view the documentation : **[How_to generate_a_JWS](./doc/How_to_use_the_i
 
 Please view the documentation : **[How_to generate_a_JWE](./doc/How_to_use_the_ioConnectSDK_to_generate_a_JWE_Serialization.md)**
 
+### 	How to Generate a DIDComm
+
+Please view the documentation : **[How_to generate_a_DIDComm](./doc/How_to_use_the_ioConnectSDK_to_generate_a_DIDComm.md)**
+
 ## PAL Usage
 
 ### 	How to Register a Device to [ioid](https://wallet.iotex.io/ioid)
