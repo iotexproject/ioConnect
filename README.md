@@ -80,7 +80,7 @@ Please view the documentation : **[How to Communicate with Sprout](./doc/Communi
 
 We provide some example projects:
 
-### ESP32: **[How to Communicate with Sprout](./doc/Communicating_with_Sprout.md)**
+### ESP32: **[ESP32 Examples](./example/esp32/)**
 
-
+### Linux: **[Linux Examples](./example/linux/)**
 
