@@ -1,14 +1,2 @@
-set(PAL_SEEED_DIR ./DeviceConnect_PAL/Seeed)
-set(PAL_SPROUT_DIR ./DeviceConnect_PAL/Sprout)
-set(PAL_DEVICE_REGISTER_DIR ./DeviceConnect_PAL/DeviceRegister)
-
-set(PAL_HEAD_PATH ${PAL_SEEED_DIR} ${PAL_SPROUT_DIR} ${PAL_DEVICE_REGISTER_DIR})
-
-file(GLOB PAL_SEEED_SOURCES ${PAL_SEEED_DIR}/*.c)
-file(GLOB PAL_SPROUT_SOURCES ${PAL_SPROUT_DIR}/*.c)
-file(GLOB PAL_DEVICE_REGISTER_SOURCES ${PAL_DEVICE_REGISTER_DIR}/*.c)
-
-set(PAL_SRC ${PAL_SEEED_SOURCES} ${PAL_SPROUT_SOURCES} ${PAL_DEVICE_REGISTER_SOURCES})
-
-idf_component_register(SRCS "ioConnect_main.c" "tcp_client_v4.c" ${PAL_SRC}
-                    INCLUDE_DIRS "." ${PAL_HEAD_PATH})
+idf_component_register(SRCS "ioConnect_main.c" "tcp_client_v4.c"
+                    INCLUDE_DIRS "." )
