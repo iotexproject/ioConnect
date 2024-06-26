@@ -2,7 +2,6 @@
 #define __IOTEX_PAL_DEVICE_REGISTER_CONFIG__
 
 #include <stdint.h>
-#include "deviceregister config.h"
 
 #define IOTEX_PAL_DEVICE_REGISTER_MODE_SERIAL       0x00
 #define IOTEX_PAL_DEVICE_REGISTER_MODE_HTTPS        0x01
