@@ -51,6 +51,7 @@ if(ESP_PLATFORM)
 							"src/utils/baseX/base64.c"
 							"src/utils/baseX/base58.c"
 							"src/utils/LowerS/LowerS.c"
+							"src/utils/devRegister/devRegister.c"
 							"src/hal/flash/flash_common.c"
 							"src/hal/flash/soc/esp32/flash.c"
 							"src/hal/nvs/nvs_common.c"
