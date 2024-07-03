@@ -1,4 +1,4 @@
-# DIDs API Examples
+# Examples
 
 This directory contains simple examples demonstrating DIDs、JOSE、Device Register API.
 
@@ -6,8 +6,8 @@ Each example, contains README.md file with mode detailed informations about that
 
 Examples:
 
-- DIDs ：This example shows how to use the API provided by ioConnect SDK. Use ioConnect SDK to generate did, diddoc, VC, etc. for embedded devices.
-- Device Register ：This example shows how to use the API provided by the ioConnect SDK Device Register component to register an ESP32-based embedded device to IoTeX Web. The entire registration process relies on DID and JOSE protocols. For details, please refer to the DIDs example.
+- DIDs ：This example shows how to use the API provided by ioConnect SDK. Use ioConnect SDK to generate did, diddoc, VC, etc. for the Linux platform.
+- Device Register ：This example shows how to use the API provided by the ioConnect SDK Device Register component to register a  device which base on the Linux platform to IoTeX Web. The entire registration process relies on DID and JOSE protocols. For details, please refer to the DIDs example.
 
 
 
@@ -39,4 +39,12 @@ This example can be run on any commonly available Linux development board.
 
 # Usage
 
+## examples
+
+### / dids
+
 Please view the documentation : **[Compile & Build](./dids/doc/readme.md)**
+
+### / device_register
+
+Please view the documentation : **[Compile & Build](./deviceregister/doc/readme.md)**
