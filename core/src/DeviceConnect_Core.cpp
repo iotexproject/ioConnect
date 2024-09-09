@@ -9,6 +9,7 @@ static uint8_t exported_dev_addr[64];
 DevConn_Comm *g_commClient;
 #endif
 
+#if 0
 static void iotex_export_public_key(void) {
 
     psa_status_t status;
@@ -46,6 +47,7 @@ static void iotex_export_public_key(void) {
     iotex_dev_access_generate_dev_addr(exported, (char *)exported_dev_addr);
     printf("Wallet Addr : %s\n", exported_dev_addr);
 }
+#endif
 
 #ifdef ARDUINO
 uint8_t * iotex_deviceconnect_sdk_core_init(DevConn_Comm *commClient)

@@ -5530,6 +5530,7 @@ psa_status_t psa_key_derivation_input_key(
 /****************************************************************/
 
 #if defined(IOTEX_PSA_BUILTIN_ALG_ECDH)
+#if !defined(CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT)
 static psa_status_t psa_key_agreement_ecdh( const uint8_t *peer_key,
                                             size_t peer_key_length,
                                             const iotex_ecp_keypair *our_key,
@@ -5582,6 +5583,7 @@ exit:
 
     return( status );
 }
+#endif
 #endif /* IOTEX_PSA_BUILTIN_ALG_ECDH */
 
 #define PSA_KEY_AGREEMENT_MAX_SHARED_SECRET_SIZE IOTEX_ECP_MAX_BYTES

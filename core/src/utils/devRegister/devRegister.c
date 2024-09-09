@@ -25,6 +25,7 @@ static char str2Hex(char c) {
     return c;
 }
 
+#if 0
 static void hex2str(char *buf_hex, int len, char *str)
 {
     int        i, j;
@@ -39,6 +40,7 @@ static void hex2str(char *buf_hex, int len, char *str)
 
     str[j] = 0;
 }
+#endif
 
 static int hexStr2Bin(char *str, char *bin) {
 	

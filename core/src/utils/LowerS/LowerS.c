@@ -127,7 +127,6 @@ void InitLowsCalc(void) {
 */
 void LowsCalc(char *s, char *out) {   
     struct BigNum a;
-    int tag = 1;
 
     InitBinary(&a, s, 32);
     if (Comp((struct BigNum *)&Lower_S, &a) < 0) {

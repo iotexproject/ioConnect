@@ -253,7 +253,7 @@ char *base64_encode_automatic( const char *buf, size_t buf_len )
 char *base64_decode_automatic( const char *inbuf, size_t inbuf_len, size_t *out_len)
 {
     char *decode = NULL;
-    int decode_len = 0, ret = 0;  
+    int ret = 0;
 
     if (NULL == inbuf || 0 == inbuf_len)
         return NULL;
