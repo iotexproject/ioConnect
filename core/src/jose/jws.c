@@ -109,9 +109,9 @@ char *iotex_jws_compact_serialize(enum JWAlogrithm alg, char *plaintext, size_t 
     psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
     
     psa_hash_setup(&operation, PSA_ALG_SHA_256);
-    psa_hash_update(&operation, protectedheader, strlen(protectedheader));
-    psa_hash_update(&operation, ".", 1);
-    psa_hash_update(&operation, base64url_payload, strlen(base64url_payload));
+    psa_hash_update(&operation, (const uint8_t *)protectedheader, strlen(protectedheader));
+    psa_hash_update(&operation, (const uint8_t *)".", 1);
+    psa_hash_update(&operation, (const uint8_t *)base64url_payload, strlen(base64url_payload));
     psa_hash_finish(&operation, hash, sizeof(hash), &hash_size);
     
     uint8_t signature[64];
@@ -120,7 +120,7 @@ char *iotex_jws_compact_serialize(enum JWAlogrithm alg, char *plaintext, size_t 
     if (PSA_SUCCESS != status)
         goto exit_2;
 
-    char *base64url_signature = base64_encode_automatic(signature, signature_length);
+    char *base64url_signature = base64_encode_automatic((const char *)signature, signature_length);
     if (NULL == base64url_signature)
         goto exit_2;
     
@@ -129,7 +129,7 @@ char *iotex_jws_compact_serialize(enum JWAlogrithm alg, char *plaintext, size_t 
     if (jws_compact_serialize) 
         snprintf(jws_compact_serialize + strlen(jws_compact_serialize), jws_compact_serialize_size - strlen(jws_compact_serialize), ".%s.%s", base64url_payload, base64url_signature);
     
-exit_1:
+// exit_1:
     if (base64url_signature)
         free(base64url_signature);
 exit_2:
@@ -181,9 +181,9 @@ jose_status_t iotex_jws_general_json_serialize_update(jws_handle_t handle, enum 
     psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
     psa_hash_setup(&operation, PSA_ALG_SHA_256);
 
-    psa_hash_update(&operation, protectedheader, strlen(protectedheader));
-    psa_hash_update(&operation, ".", 1);
-    psa_hash_update(&operation, g_jws_info.base64url_payload, strlen(g_jws_info.base64url_payload));
+    psa_hash_update(&operation, (const uint8_t *)protectedheader, strlen(protectedheader));
+    psa_hash_update(&operation, (const uint8_t *)".", 1);
+    psa_hash_update(&operation,(const uint8_t *)g_jws_info.base64url_payload, strlen(g_jws_info.base64url_payload));
     psa_hash_finish(&operation, hash, sizeof(hash), &hash_size);
     
     uint8_t signature[64];
@@ -194,7 +194,7 @@ jose_status_t iotex_jws_general_json_serialize_update(jws_handle_t handle, enum 
         return JOSE_ERROR_INTERNAL_COMPUTE;
     }
 
-    char *base64url_signature = base64_encode_automatic(signature, signature_length);
+    char *base64url_signature = base64_encode_automatic((const char *)signature, signature_length);
     if (NULL == base64url_signature) {
         free(protectedheader);
         return JOSE_ERROR_INTERNAL_COMPUTE;        
@@ -272,9 +272,9 @@ char *iotex_jws_flattened_json_serialize(enum JWAlogrithm alg, char *plaintext, 
     psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
     psa_hash_setup(&operation, PSA_ALG_SHA_256);
 
-    psa_hash_update(&operation, protectedheader, strlen(protectedheader));
-    psa_hash_update(&operation, ".", 1);
-    psa_hash_update(&operation, base64url_payload, strlen(base64url_payload));
+    psa_hash_update(&operation, (const uint8_t *)protectedheader, strlen(protectedheader));
+    psa_hash_update(&operation, (const uint8_t *)".", 1);
+    psa_hash_update(&operation, (const uint8_t *)base64url_payload, strlen(base64url_payload));
     psa_hash_finish(&operation, hash, sizeof(hash), &hash_size);
     
     uint8_t signature[64];
@@ -283,7 +283,7 @@ char *iotex_jws_flattened_json_serialize(enum JWAlogrithm alg, char *plaintext, 
     if (PSA_SUCCESS != status)
         goto exit_2;
 
-    char *base64url_signature = base64_encode_automatic(signature, signature_length);
+    char *base64url_signature = base64_encode_automatic((const char *)signature, signature_length);
     if (NULL == base64url_signature)
         goto exit_2;
 
@@ -374,7 +374,7 @@ bool iotex_jws_compact_verify(enum JWAlogrithm alg, char *jws_msg, JWK *jwk)
     psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
     
     psa_hash_setup(&operation, PSA_ALG_SHA_256);
-    psa_hash_update(&operation, jws_msg, signature_pos);
+    psa_hash_update(&operation, (const uint8_t *)jws_msg, signature_pos);
     psa_hash_finish(&operation, hash, sizeof(hash), &hash_size);
 
     size_t signature_size = 0;
@@ -382,7 +382,7 @@ bool iotex_jws_compact_verify(enum JWAlogrithm alg, char *jws_msg, JWK *jwk)
     if (NULL == signature)
         return false;
 
-    psa_status_t psa_status = psa_verify_hash( jwk->key_id, PSA_ALG_ECDSA(PSA_ALG_SHA_256), hash, hash_size, signature, signature_size);
+    psa_status_t psa_status = psa_verify_hash( jwk->key_id, PSA_ALG_ECDSA(PSA_ALG_SHA_256), hash, hash_size, (const uint8_t *)signature, signature_size);
 
     if (signature)
         free(signature);

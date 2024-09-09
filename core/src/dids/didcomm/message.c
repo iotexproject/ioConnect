@@ -54,6 +54,7 @@ static int _validate_pack_signed(char *sign_by)
     return _is_did(sign_by);
 }
 
+#if 0
 static int __validate_pack_encrypted(Message *msg, char *to, char *from, char *sign_by)
 {
     int ret = 0, isContained = 0;
@@ -112,7 +113,9 @@ exit:
 
     return ret;            
 }
+#endif
 
+#if 0
 static char *_envelope_jwe_protectedheader_serialize(JweProtectedHeader *header)
 {
     char *output = NULL;
@@ -153,6 +156,7 @@ static char *_envelope_jwe_protectedheader_serialize(JweProtectedHeader *header)
 
     return output;
 }
+#endif
 
 static char *_envelope_jws_protectedheader_serialize(JWSProtectedHeader *header)
 {
@@ -675,7 +679,7 @@ char *didcomm_message_pack_signed(Message *message, char *sign_by, JWK *jwk)
     sign_input[strlen(base64url_header)] = '.';
     memcpy(sign_input + strlen(base64url_header) + 1, base64url_payload, strlen(base64url_payload));
 
-    psa_sign_message(1, PSA_ALG_ECDSA(PSA_ALG_SHA_256), sign_input, sign_input_len, signature, 64, &actual_len);
+    psa_sign_message(1, PSA_ALG_ECDSA(PSA_ALG_SHA_256), (const uint8_t *)sign_input, sign_input_len, signature, 64, &actual_len);
     
     base64url_signature_len = BASE64_ENCODE_GETLENGTH(actual_len);
     base64url_signature = malloc(base64url_signature_len);
@@ -686,7 +690,7 @@ char *didcomm_message_pack_signed(Message *message, char *sign_by, JWK *jwk)
         return NULL;
     }
     memset(base64url_signature, 0, base64url_signature_len);
-    base64url_encode(signature, actual_len, base64url_signature, &base64url_signature_len);
+    base64url_encode((const char *)signature, actual_len, base64url_signature, &base64url_signature_len);
 
     JWSHeader sig_header;
     sig_header.kid = sign_by;
@@ -795,27 +799,30 @@ int message_encrypt_test(char *plaintext)
     int nonce_length = PSA_AEAD_NONCE_LENGTH(PSA_KEY_TYPE_AES, PSA_ALG_CCM);
     status =  psa_generate_random( nonce, nonce_length );
     
-    char *ciphertext = iotex_jwe_encrypt_plaintext(cekey_id, plaintext, strlen(plaintext), nonce, nonce_length, protected, strlen(protected), &clen);
+    char *ciphertext = iotex_jwe_encrypt_plaintext(cekey_id, plaintext, strlen(plaintext), (char *)nonce, nonce_length, protected, strlen(protected), &clen);
 
     if (NULL == ciphertext)
         return -1;
 
     char *cipher_base64url = base64_encode_automatic(ciphertext, strlen(plaintext));
-    if (cipher_base64url)
+    if (cipher_base64url) {
         printf("cipher : %s\n", cipher_base64url);
+    }
     char *tag_base64url    = base64_encode_automatic(ciphertext + strlen(plaintext), clen - strlen(plaintext));
-    if (tag_base64url)
+    if (tag_base64url) {
         printf("tag : %s\n", tag_base64url);
-    char *iv_base64url     = base64_encode_automatic(nonce, nonce_length);
-    if (iv_base64url)
+    }
+    char *iv_base64url     = base64_encode_automatic((const char *)nonce, nonce_length);
+    if (iv_base64url) {
         printf("iv : %s\n", iv_base64url);
+    }
 
 	uint8_t private1[32] = {0};
-	uint8_t private2[32] = {0};
+	// uint8_t private2[32] = {0}; 
 	uint8_t public1[2*32] = {0};
-	uint8_t public2[2*32] = {0};
+	// uint8_t public2[2*32] = {0};    
 	uint8_t secret1[32] = {0};
-	uint8_t secret2[32] = {0};
+	// uint8_t secret2[32] = {0};  
 
 	uECC_Curve curve = uECC_secp256r1();
 
@@ -837,7 +844,7 @@ int message_encrypt_test(char *plaintext)
     if (PSA_SUCCESS != status)
         return -3;
     
-    status = psa_cipher_encrypt(wrap_id, PSA_ALG_CBC_NO_PADDING, cekey, 32, wkey, 32 + 16, &wkey_len);
+    status = psa_cipher_encrypt(wrap_id, PSA_ALG_CBC_NO_PADDING, cekey, 32, (uint8_t *)wkey, 32 + 16, &wkey_len);
     if (PSA_SUCCESS != status)
         return -4;
     

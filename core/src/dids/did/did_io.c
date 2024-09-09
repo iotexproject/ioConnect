@@ -16,8 +16,9 @@ static char *name(void)
 static char *generate(JWK *jwk)
 {
     char public_key[64]   = {0};
-    char internal_raw[36] = {0};
-    char *coverted = NULL, *did_str = NULL; 
+    // char internal_raw[36] = {0};
+    // char *coverted = NULL, *did_str = NULL; 
+    char *did_str = NULL;
 
     if ( NULL == jwk )
         return NULL;
@@ -34,7 +35,7 @@ static char *generate(JWK *jwk)
             did_str = calloc(strlen("did:io:") + 2 + 20 * 2 + 1, sizeof(char));                
 
             uint8_t hash[32] = {0};
-            keccak256_getHash(public_key, 64, hash);
+            keccak256_getHash((const uint8_t *)public_key, 64, hash);
 
             strcpy(did_str, "did:io:");
 

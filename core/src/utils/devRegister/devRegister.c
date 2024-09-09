@@ -103,8 +103,8 @@ char * iotex_utils_device_register_did_upload_prepare(char *did, psa_key_id_t ke
     psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
     
     psa_hash_setup(&operation, PSA_ALG_SHA_256);
-    psa_hash_update(&operation, did, strlen(did));
-    psa_hash_update(&operation, puk_str, strlen(puk_str));
+    psa_hash_update(&operation, (const uint8_t *)did, strlen(did));
+    psa_hash_update(&operation, (const uint8_t *)puk_str, strlen(puk_str));
     psa_hash_finish(&operation, hash, sizeof(hash), &hash_size);
     
     size_t  signature_length;
@@ -148,7 +148,7 @@ char * iotex_utils_device_register_diddoc_upload_prepare(char *diddoc, psa_key_i
     cJSON_AddItemToObject(diddoc_root, "diddoc", diddoc_item);
 
     size_t signature_length = 0;
-    psa_status_t status =  psa_sign_message(keyid, PSA_ALG_ECDSA(PSA_ALG_SHA_256), diddoc, strlen(diddoc), signature, 64, &signature_length);
+    psa_status_t status =  psa_sign_message(keyid, PSA_ALG_ECDSA(PSA_ALG_SHA_256), (const uint8_t *)diddoc, strlen(diddoc), signature, 64, &signature_length);
     if (status != PSA_SUCCESS)
         goto exit;
 
@@ -188,7 +188,7 @@ char * iotex_utils_device_register_signature_response_prepare(char *buf, psa_key
     if(hex_str[0] != '0' || hex_str[1] != 'x')
         goto exit;
 
-    int hexbin_len = hexStr2Bin(hex_str + 2, hexbin);
+    int hexbin_len = hexStr2Bin(hex_str + 2, (char *)hexbin);
     
     uint8_t signature[64];
     size_t  signature_length;

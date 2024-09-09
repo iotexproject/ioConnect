@@ -80,7 +80,7 @@ static char * _fill_recipients_apv(char *recipients_kid[JOSE_JWE_RECIPIENTS_MAX]
     size_t base64url_encode_len;    
     uint32_t recipients_kid_len = 0, idx = 0; 
     
-    int recipients_num = _find_recipients_num(recipients_kid, &recipients_kid_len);
+    int recipients_num = _find_recipients_num(recipients_kid, (unsigned int *)&recipients_kid_len);
     if (0 == recipients_num)
         return NULL;        
         
@@ -100,7 +100,7 @@ static char * _fill_recipients_apv(char *recipients_kid[JOSE_JWE_RECIPIENTS_MAX]
         }
     }
 
-    status = psa_hash_compute(PSA_ALG_SHA_256, apv, strlen(apv), hash, 32, &hash_length);
+    status = psa_hash_compute(PSA_ALG_SHA_256, (const uint8_t *)apv, strlen(apv), hash, 32, &hash_length);
     if (PSA_SUCCESS != status)
         goto exit;   
 
@@ -109,7 +109,7 @@ static char * _fill_recipients_apv(char *recipients_kid[JOSE_JWE_RECIPIENTS_MAX]
     if (NULL == base64url_encode_buf)
         goto exit;
     memset(base64url_encode_buf, 0, base64url_encode_len);
-    base64url_encode(hash, hash_length, base64url_encode_buf, &base64url_encode_len);     
+    base64url_encode((const char *)hash, hash_length, base64url_encode_buf, &base64url_encode_len);     
 
 exit:
     if (apv)
@@ -168,7 +168,7 @@ char *iotex_jwe_encrypt_plaintext(psa_key_id_t key_id, char *plaintext, size_t p
         return NULL; 
     }               
     
-    status =  psa_aead_encrypt(key_id, PSA_ALG_CCM, nonce, nonce_len, ad, ad_len, plaintext, pLen, ciphertext, pLen + PSA_AEAD_TAG_LENGTH(PSA_KEY_TYPE_AES, 256, PSA_ALG_CCM), ciphertext_length);
+    status =  psa_aead_encrypt(key_id, PSA_ALG_CCM, (const uint8_t *)nonce, nonce_len, (const uint8_t *)ad, ad_len, (const uint8_t *)plaintext, pLen, (uint8_t *)ciphertext, pLen + PSA_AEAD_TAG_LENGTH(PSA_KEY_TYPE_AES, 256, PSA_ALG_CCM), ciphertext_length);
     if (PSA_SUCCESS != status)
         return NULL;
     
@@ -205,7 +205,7 @@ char * iotex_jwe_decrypt_plaintext(psa_key_id_t key_id, char *ciphertext, size_t
     memcpy(ciphertext_tag, ciphertext, ciphertext_length);
     memcpy(ciphertext_tag + ciphertext_length, tag, tag_length);
     
-    status = psa_aead_decrypt( key_id, PSA_ALG_CCM, nonce, nonce_len, ad, ad_len, ciphertext_tag, ciphertext_length + tag_length, plaintext, plaintext_size, plaintext_length );
+    status = psa_aead_decrypt( key_id, PSA_ALG_CCM, (const uint8_t *)nonce, nonce_len, (const uint8_t *)ad, ad_len, (const uint8_t *)ciphertext_tag, ciphertext_length + tag_length, (uint8_t *)plaintext, plaintext_size, plaintext_length );
     if (PSA_SUCCESS == status) 
         goto exit2;
 
@@ -410,7 +410,7 @@ char *iotex_jwe_encrypt(char *plaintext, enum KWAlgorithms alg, enum EncAlgorith
         return NULL;          
     
     JWK *epk = iotex_jwk_generate_by_secret(cek, sizeof(cek), JWKTYPE_EC, JWK_SUPPORT_KEY_ALG_P256,
-                                        PSA_KEY_LIFETIME_VOLATILE, PSA_KEY_USAGE_DERIVE, PSA_ALG_ECDH, &epk_id);
+                                        PSA_KEY_LIFETIME_VOLATILE, PSA_KEY_USAGE_DERIVE, PSA_ALG_ECDH, (unsigned int *)&epk_id);
     if (NULL == epk)
         goto exit;                                            
     
@@ -424,13 +424,13 @@ char *iotex_jwe_encrypt(char *plaintext, enum KWAlgorithms alg, enum EncAlgorith
         goto exit;          
 
     size_t ciphertext_len = 0;
-    char *ciphertext = iotex_jwe_encrypt_plaintext(cek_id, plaintext, strlen(plaintext), nonce, nonce_length, protected, strlen(protected), &ciphertext_len);
+    char *ciphertext = iotex_jwe_encrypt_plaintext(cek_id, plaintext, strlen(plaintext), (char *)nonce, nonce_length, protected, strlen(protected), &ciphertext_len);
     if (NULL == ciphertext)
         goto exit;
     
     cipher_b64u = base64_encode_automatic(ciphertext, strlen(plaintext));
     tag_b64u    = base64_encode_automatic(ciphertext + strlen(plaintext), ciphertext_len - strlen(plaintext));
-    iv_b64u     = base64_encode_automatic(nonce, nonce_length);
+    iv_b64u     = base64_encode_automatic((const char *)nonce, nonce_length);
 
     if (ciphertext) {
         free(ciphertext);
@@ -450,13 +450,13 @@ char *iotex_jwe_encrypt(char *plaintext, enum KWAlgorithms alg, enum EncAlgorith
         if (JOSE_SUCCESS != jose_status)
             continue;
 
-        psa_status = psa_raw_key_agreement(PSA_ALG_ECDH, epk_id, rkey, 64, secret, 32, &secret_len);
+        psa_status = psa_raw_key_agreement(PSA_ALG_ECDH, epk_id, (const uint8_t *)rkey, 64, (uint8_t *)secret, 32, &secret_len);
         if (PSA_SUCCESS != psa_status)
             continue;
     
         psa_set_key_algorithm(&attributes, PSA_ALG_CBC_NO_PADDING);
 
-        psa_status = psa_import_key( &attributes, secret, 32, &wrap_id );  
+        psa_status = psa_import_key( &attributes, (const uint8_t *)secret, 32, &wrap_id );  
         if (PSA_SUCCESS != psa_status)
             continue;       
         
@@ -474,7 +474,7 @@ char *iotex_jwe_encrypt(char *plaintext, enum KWAlgorithms alg, enum EncAlgorith
         // char *wkey_base64url = base64_encode_automatic(wkey, 32 + 16);
             
         recipients[i].header.kid    = recipients_kid[i];
-        recipients[i].encrypted_key = base64_encode_automatic(wkey, 32 + 16);
+        recipients[i].encrypted_key = base64_encode_automatic((const char *)wkey, 32 + 16);
 
         recipients_success++;
 
@@ -649,7 +649,7 @@ char *iotex_jwe_decrypt(char *jwe_serialize, enum KWAlgorithms alg, enum EncAlgo
     
     size_t  secret_len = 0;
     uint8_t secret[32] = {0};    
-    psa_status_t psa_status = psa_raw_key_agreement(PSA_ALG_ECDH, key_id, epk_pub, 64, secret, 32, &secret_len);
+    psa_status_t psa_status = psa_raw_key_agreement(PSA_ALG_ECDH, key_id, (const uint8_t *)epk_pub, 64, secret, 32, &secret_len);
     if (PSA_SUCCESS != psa_status)
         goto exit_8;
 
@@ -667,7 +667,7 @@ char *iotex_jwe_decrypt(char *jwe_serialize, enum KWAlgorithms alg, enum EncAlgo
 
     uint8_t cek[32] = {0};
     size_t cek_len = 0;
-    psa_status = psa_cipher_decrypt( psa_keyid, PSA_ALG_CBC_NO_PADDING, encrypted_key, encrypted_key_len, cek, sizeof(cek), &cek_len );
+    psa_status = psa_cipher_decrypt( psa_keyid, PSA_ALG_CBC_NO_PADDING, (const uint8_t *)encrypted_key, encrypted_key_len, cek, sizeof(cek), &cek_len );
     psa_destroy_key(psa_keyid);    
     if (PSA_SUCCESS != psa_status) 
         goto exit_8;

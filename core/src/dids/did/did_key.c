@@ -41,7 +41,7 @@ static char *generate(JWK *jwk)
                 return NULL;
             
             strcpy(did_str, "did:key:");
-            coverted = base58_encode(internal_raw, 33 + 2);
+            coverted = base58_encode((const unsigned char *)internal_raw, 33 + 2);
             if (coverted) {
                 
                 strcpy(did_str + strlen("did:key:"), coverted);

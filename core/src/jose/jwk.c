@@ -457,7 +457,7 @@ JWK *iotex_jwk_generate(enum JWKType type, enum JWKSupportKeyAlg keyalg,
 
     _jwk_psa_key_attributes_set(&attributes, keyalg, lifetime, key_usage, alg, *key_id);
     
-    status = psa_generate_key(&attributes, key_id);
+    status = psa_generate_key(&attributes, (psa_key_id_t *)key_id);
     if( status != PSA_SUCCESS )
         return NULL;
 
@@ -475,12 +475,15 @@ jwk_generater:
     base64url_encode((char *)exported + 32, 32, jwk->Params.ec.y_coordinate, &y_len);
 
     jwk->type = JWKTYPE_EC;
-    if (JWK_SUPPORT_KEY_ALG_P256 == keyalg) {
-        strncpy(jwk->Params.ec.crv, "P-256", strlen("P-256"));
+    if (JWK_SUPPORT_KEY_ALG_P256 == keyalg) {        
+        // strncpy(jwk->Params.ec.crv, "P-256", strlen("P-256"));
+        strcpy(jwk->Params.ec.crv, "P-256");
     } else if (JWK_SUPPORT_KEY_ALG_K256 == keyalg) {
-        strncpy(jwk->Params.ec.crv, "secp256k1", strlen("secp256k1"));
+        // strncpy(jwk->Params.ec.crv, "secp256k1", strlen("secp256k1"));
+        strcpy(jwk->Params.ec.crv, "secp256k1");
     } else if ((JWK_SUPPORT_KEY_ALG_ED25519 == keyalg)) {
-        strncpy(jwk->Params.ec.crv, "Ed25519", strlen("Ed25519"));
+        // strncpy(jwk->Params.ec.crv, "Ed25519", strlen("Ed25519"));
+        strcpy(jwk->Params.ec.crv, "Ed25519");
     }    
 
     jwk->key_id = *key_id;
@@ -536,7 +539,7 @@ JWK* iotex_jwk_generate_by_secret(uint8_t *secret, unsigned int secret_size,
     _jwk_psa_key_attributes_set(&attributes, keyalg, lifetime, key_usage, alg, *key_id);
 #endif
 
-    status = psa_import_key( &attributes, secret, 32, key_id );
+    status = psa_import_key( &attributes, secret, 32, (psa_key_id_t *)key_id );
     if( status != PSA_SUCCESS )
         return NULL;
     
@@ -555,11 +558,23 @@ JWK* iotex_jwk_generate_by_secret(uint8_t *secret, unsigned int secret_size,
 
     jwk->type = JWKTYPE_EC;
     if (JWK_SUPPORT_KEY_ALG_P256 == keyalg) {
+#if 0        
         strncpy(jwk->Params.ec.crv, "P-256", strlen("P-256"));
+#else        
+        strcpy(jwk->Params.ec.crv, "P-256");
+#endif        
     } else if (JWK_SUPPORT_KEY_ALG_K256 == keyalg) {
+#if 0        
         strncpy(jwk->Params.ec.crv, "secp256k1", strlen("secp256k1"));
+#else
+        strcpy(jwk->Params.ec.crv, "secp256k1");
+#endif        
     } else if ((JWK_SUPPORT_KEY_ALG_ED25519 == keyalg)) {
+#if 0        
         strncpy(jwk->Params.ec.crv, "Ed25519", strlen("Ed25519"));
+#else
+        strcpy(jwk->Params.ec.crv, "Ed25519");
+#endif        
     }    
 
     jwk->key_id = *key_id;

@@ -2391,7 +2391,7 @@ inline int iotex_ecp_point_write_binary( const iotex_ecp_group *grp,
 #ifdef CONFIG_PSA_CRYPTO_BACKENDS_TINYCRYPT
 inline int iotex_ecp_gen_key( psa_key_type_t type, uint8_t *key_buffer, size_t key_buffer_size )
 {
-    uECC_Curve curve;
+    uECC_Curve curve = uECC_secp256r1();
 
     if(key_buffer == NULL)
         return 1;
@@ -2418,7 +2418,7 @@ inline int iotex_ecp_gen_key( psa_key_type_t type, uint8_t *key_buffer, size_t k
 
 inline int iotex_ecp_calc_pub_key( psa_key_type_t type, uint8_t *key_buffer, size_t key_buffer_size )
 {
-    uECC_Curve curve;
+    uECC_Curve curve = uECC_secp256r1();
 
     if(key_buffer == NULL)
         return 1;
@@ -2444,7 +2444,7 @@ inline int iotex_ecp_calc_pub_key( psa_key_type_t type, uint8_t *key_buffer, siz
 
 inline int iotex_psa_ecp_export_key_from_raw_data(psa_key_type_t type, const uint8_t *key_buffer, uint8_t *data, size_t *data_length )
 {
-    uECC_Curve curve;
+    uECC_Curve curve = uECC_secp256r1();
 
     if(key_buffer == NULL)
         return 1;

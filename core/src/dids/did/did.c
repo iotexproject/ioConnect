@@ -22,7 +22,13 @@ typedef struct {
     DID_Method *method;
 } DID_Methods;
 
-static DID_Methods g_method[DID_METHODS_MAX_NUM] = {{DID_METHOD_KEY_NAME, &did_key_method}, {DID_METHOD_IO_NAME, &did_io_method}, {0}, {0}};
+// static DID_Methods g_method[DID_METHODS_MAX_NUM] = {{DID_METHOD_KEY_NAME, &did_key_method}, {DID_METHOD_IO_NAME, &did_io_method}, {0}, {0}};
+static DID_Methods g_method[DID_METHODS_MAX_NUM] = {
+    { {DID_METHOD_KEY_NAME}, &did_key_method },
+    { {DID_METHOD_IO_NAME}, &did_io_method },
+    { {0}, NULL },
+    { {0}, NULL }
+};
 
 enum VerificationRelationship get_verification_relationship_default(void)
 {
@@ -133,19 +139,23 @@ char* iotex_did_generate(char *name, JWK *jwk)
     return method->generate(jwk);        
 }
 
-int iotex_dids_get_agreement_key(char *did, uint8_t *out, size_t *out_size)
-{
-    if (NULL == did || NULL == out || NULL == out_size)
-        return -1;
-
 #define IOTEX_TEST_FOR_PROCESS
 #ifdef IOTEX_TEST_FOR_PROCESS
 
 #include "include/backends/tinycryt/ecc.h"
 #include "include/backends/tinycryt/ecc_dh.h"
 
+#endif
+
+int iotex_dids_get_agreement_key(char *did, uint8_t *out, size_t *out_size)
+{
+    if (NULL == did || NULL == out || NULL == out_size)
+        return -1;
+
+#ifdef IOTEX_TEST_FOR_PROCESS
+
 	uint8_t private[32] = {0};
-	uint8_t public[2*32] = {0};
+	// uint8_t public[2*32] = {0};
 
 	const struct uECC_Curve_t * curve = uECC_secp256r1();
 
@@ -390,7 +400,8 @@ static did_status_t _diddoc_sub_property_set(cJSON *object, unsigned int subtype
             cJSON_AddBoolToObject(object, name, *(cJSON_bool *)value);
             break;
         case IOTEX_DIDDOC_BUILD_PROPERTY_SUB_TYPE_PRIVATE_JSON:
-            cJSON_AddItemToObject(object, name, cJSON_Duplicate((cJSON *)value, true));                             
+            cJSON_AddItemToObject(object, name, cJSON_Duplicate((cJSON *)value, true));
+            break;                             
         default:
             return DID_ERROR_INVALID_ARGUMENT;
     }        
