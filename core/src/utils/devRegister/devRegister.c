@@ -63,70 +63,86 @@ static void iotex_utils_convert_hex_to_str(const unsigned char *hex, size_t hex_
     output[hex_size * 2] = '\0';
 }
 
-char * iotex_utils_device_register_did_upload_prepare(char *did, psa_key_id_t keyid)
+char * iotex_utils_device_register_did_upload_prepare(char *did, psa_key_id_t keyid, char *signature_context, bool format)
 {
     char *did_serialize = NULL;
 
     uint8_t signature[64];
     char signature_str[64 * 2 + 1] = {0};
 
-    uint8_t puk[64] = {0};
+    uint8_t puk[65] = {0};
     char puk_str[64 * 2 + 4 + 1] = {0};
 
     size_t puk_length = 0;
 
     puk_str[0] = '0';
     puk_str[1] = 'x';
-    puk_str[2] = '0';
-    puk_str[3] = '4';
-
+    // puk_str[2] = '0';
+    // puk_str[3] = '4';
+    
     if (NULL == did)
         return NULL;
-
+    
     if (IOTEX_PSA_KEY_ID_INVALID == keyid)
         keyid = IOTEX_PSA_KEY_ID_DEFAULT;
-
+    
     cJSON *did_root = cJSON_CreateObject();
     if (NULL == did_root)
         return NULL;
-
+    
     cJSON_AddStringToObject(did_root, "did", did);
 
     psa_status_t status = psa_export_public_key( keyid, (uint8_t *)puk, sizeof(puk), &puk_length );
+    
     if (PSA_SUCCESS != status)
         goto exit;
-
-    iotex_utils_convert_hex_to_str(puk , puk_length, puk_str + 4);
+    
+    iotex_utils_convert_hex_to_str(puk , puk_length, puk_str + 2);
 
     cJSON_AddStringToObject(did_root, "puk", puk_str);
+    cJSON_AddStringToObject(did_root, "project_name", IOTEX_PAL_DEVICE_REGISTER_UPLOAD_DID_PROJECT_NAME);
 
-    uint8_t hash[32];
-    size_t  hash_size = 0;
-    psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
-    
-    psa_hash_setup(&operation, PSA_ALG_SHA_256);
-    psa_hash_update(&operation, (const uint8_t *)did, strlen(did));
-    psa_hash_update(&operation, (const uint8_t *)puk_str, strlen(puk_str));
-    psa_hash_finish(&operation, hash, sizeof(hash), &hash_size);
-    
-    size_t  signature_length;
-    status = psa_sign_hash(keyid, PSA_ALG_ECDSA(PSA_ALG_SHA_256), hash, hash_size, signature, sizeof(signature), &signature_length);
-    if (PSA_SUCCESS != status)
-        goto exit;
+    memset(signature_str, 0, sizeof(signature_str));
 
-    iotex_utils_convert_hex_to_str(signature , signature_length, signature_str);        
+    if (signature_context) {
 
+        strcpy(signature_str, signature_context);
+
+    } else {
+
+        uint8_t hash[32];
+        size_t  hash_size = 0;
+        psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
+        
+        psa_hash_setup(&operation, PSA_ALG_SHA_256);
+        psa_hash_update(&operation, did, strlen(did));
+        psa_hash_update(&operation, puk_str, strlen(puk_str));
+        psa_hash_finish(&operation, hash, sizeof(hash), &hash_size);
+        
+        size_t  signature_length;
+        status = psa_sign_hash(keyid, PSA_ALG_ECDSA(PSA_ALG_SHA_256), hash, hash_size, signature, sizeof(signature), &signature_length);
+        if (PSA_SUCCESS != status)
+            goto exit;
+        
+        iotex_utils_convert_hex_to_str(signature , signature_length, signature_str);   
+
+    }
+     
     cJSON_AddStringToObject(did_root, "signature", signature_str);
 
-    did_serialize = cJSON_Print(did_root);
-
+    if (format) {
+        did_serialize = cJSON_Print(did_root);
+    } else {
+        did_serialize = cJSON_PrintUnformatted(did_root);
+    }
+    
 exit:
     cJSON_Delete(did_root);
 
     return did_serialize;    
 }
 
-char * iotex_utils_device_register_diddoc_upload_prepare(char *diddoc, psa_key_id_t keyid)
+char * iotex_utils_device_register_diddoc_upload_prepare(char *diddoc, psa_key_id_t keyid, char *signature_context, bool format)
 {
     char *diddoc_serialize = NULL;
 
@@ -149,16 +165,28 @@ char * iotex_utils_device_register_diddoc_upload_prepare(char *diddoc, psa_key_i
 
     cJSON_AddItemToObject(diddoc_root, "diddoc", diddoc_item);
 
-    size_t signature_length = 0;
-    psa_status_t status =  psa_sign_message(keyid, PSA_ALG_ECDSA(PSA_ALG_SHA_256), (const uint8_t *)diddoc, strlen(diddoc), signature, 64, &signature_length);
-    if (status != PSA_SUCCESS)
-        goto exit;
+    if (signature_context) {
 
-    iotex_utils_convert_hex_to_str(signature , signature_length, signature_str);
+        strcpy(signature_str, signature_context);
+
+    } else {    
+
+        size_t signature_length = 0;
+        psa_status_t status =  psa_sign_message(keyid, PSA_ALG_ECDSA(PSA_ALG_SHA_256), diddoc, strlen(diddoc), signature, 64, &signature_length);
+        if (status != PSA_SUCCESS)
+            goto exit;
+
+        iotex_utils_convert_hex_to_str(signature , signature_length, signature_str);
+
+    }
 
     cJSON_AddStringToObject(diddoc_root, "signature", signature_str);
 
-    diddoc_serialize = cJSON_Print(diddoc_root);
+    if (format) {
+        diddoc_serialize = cJSON_Print(diddoc_root);
+    } else {
+        diddoc_serialize = cJSON_PrintUnformatted(diddoc_root);
+    }    
 
 exit:
     cJSON_Delete(diddoc_root);
