@@ -148,6 +148,4 @@ sudo pacman -S libmicrohttpd
   HTTP server running on port 8000
   ```
 
-- #### Please visit the following website to register your device：
-
-​		[IoTeX Hub (iotex-hub-pr-11.onrender.com)](https://iotex-hub-pr-11.onrender.com/device-registration)
+  #### 
