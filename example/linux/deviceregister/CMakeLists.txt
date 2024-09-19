@@ -5,9 +5,9 @@ project (DeviceRegister)
 option (COMPILE_LIB_SET "Set ioConnectCore compile to a Lib" ON)
 
 include_directories(./core/src)
-include_directories(./pal/linux/DeviceRegister)
+include_directories(./pal/Linux/DeviceRegister)
 
-add_executable(DeviceRegister main.c ./pal/linux/DeviceRegister/deviceregister.c) 
+add_executable(DeviceRegister main.c ./pal/Linux/DeviceRegister/deviceregister.c) 
 
 add_subdirectory(./core)
 
