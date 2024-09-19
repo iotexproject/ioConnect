@@ -70,15 +70,15 @@ char * iotex_utils_device_register_did_upload_prepare(char *did, psa_key_id_t ke
     uint8_t signature[64];
     char signature_str[64 * 2 + 1] = {0};
 
-    uint8_t puk[65] = {0};
+    uint8_t puk[64] = {0};
     char puk_str[64 * 2 + 4 + 1] = {0};
 
     size_t puk_length = 0;
 
     puk_str[0] = '0';
     puk_str[1] = 'x';
-    // puk_str[2] = '0';
-    // puk_str[3] = '4';
+    puk_str[2] = '0';
+    puk_str[3] = '4';
     
     if (NULL == did)
         return NULL;
@@ -93,11 +93,10 @@ char * iotex_utils_device_register_did_upload_prepare(char *did, psa_key_id_t ke
     cJSON_AddStringToObject(did_root, "did", did);
 
     psa_status_t status = psa_export_public_key( keyid, (uint8_t *)puk, sizeof(puk), &puk_length );
-    
     if (PSA_SUCCESS != status)
         goto exit;
     
-    iotex_utils_convert_hex_to_str(puk , puk_length, puk_str + 2);
+    iotex_utils_convert_hex_to_str(puk , puk_length, puk_str + 4);
 
     cJSON_AddStringToObject(did_root, "puk", puk_str);
     cJSON_AddStringToObject(did_root, "project_name", IOTEX_PAL_DEVICE_REGISTER_UPLOAD_DID_PROJECT_NAME);
