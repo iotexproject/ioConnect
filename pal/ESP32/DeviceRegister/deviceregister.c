@@ -13,9 +13,19 @@
 #include "include/jose/jose.h"
 #include "include/dids/dids.h"
 
-#include "deviceregister.h"
+#include "include/utils/convert/convert.h"
+#include "include/utils/devRegister/devRegister.h"
 
 static const char *TAG = "DevReg";
+
+static char * upload_did = NULL;
+static char * upload_diddoc = NULL;
+
+static uint8_t secret[32] = {0x57, 0x81, 0x5e, 0x3d, 0x20, 0x9a, 0x42, 0x8d, 0x48, 0x44, 0x83, 0xcc, 0x1a, 0x2c, 0x5b, 0x5d, 0x97, 0x00, 0x7d, 0x5f, 0x17, 0xff, 0xc0, 0xd4, 0xee, 0xd6, 0x03, 0xa4, 0x08, 0x55, 0x03, 0x9e};
+
+static psa_key_id_t device_register_key_id = 0;
+static uint8_t signature[64] = {0};
+static char    signature_str[64 * 2 + 1] = {0};
 
 /** @brief Return larger value of two provided expressions.
  *
@@ -41,207 +51,6 @@ static TaskHandle_t pxCreatedTask;
 static esp_log_level_t log_level = 0;
 
 static httpd_handle_t server = NULL;
-
-static char * upload_did = NULL;
-static char * upload_diddoc = NULL;
-
-static char str2Hex(char c) {
-
-    if (c >= '0' && c <= '9') {
-        return (c - '0');
-    }
-
-    if (c >= 'a' && c <= 'z') {
-        return (c - 'a' + 10);
-    }
-
-    if (c >= 'A' && c <= 'Z') {
-        return (c -'A' + 10);
-    }
-
-    return c;
-}
-
-static void hex2str(char *buf_hex, int len, char *str)
-{
-    int        i, j;
-    const char hexmap[] = {
-        '0', '1', '2', '3', '4', '5', '6', '7',
-        '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-    for (i = 0, j = 0; i < len; i++) {
-        str[j++] = hexmap[buf_hex[i] >> 4];
-        str[j++] = hexmap[buf_hex[i] & 0x0F];
-    }
-    str[j] = 0;
-}
-
-static int hexStr2Bin(char *str, char *bin) {
-	
-    int i,j;
-    for(i = 0,j = 0; j < (strlen(str)>>1) ; i++,j++) {
-        bin[j] = (str2Hex(str[i]) <<4);
-        i++;
-        bin[j] |= str2Hex(str[i]);
-    }
-
-    return j; 
-}
-
-char * iotex_pal_device_register_did_upload_prepare(char *did, uint32_t keyid)
-{
-    char *did_serialize = NULL;
-
-    uint8_t signature[64];
-    char signature_str[64 * 2 + 1] = {0};
-
-    uint8_t puk[64] = {0};
-    char puk_str[64 * 2 + 4 + 1] = {0};
-
-    size_t puk_length = 0;
-
-    puk_str[0] = '0';
-    puk_str[1] = 'x';
-    puk_str[2] = '0';
-    puk_str[3] = '4';
-
-    if (NULL == did)
-        return NULL;
-
-    if (0 == keyid)
-        keyid = 1;
-
-    cJSON *did_root = cJSON_CreateObject();
-    if (NULL == did_root)
-        return NULL;
-
-    cJSON_AddStringToObject(did_root, "did", did);
-
-    psa_status_t status = psa_export_public_key( keyid, (uint8_t *)puk, sizeof(puk), &puk_length );
-    if (PSA_SUCCESS != status)
-        goto exit;
-
-    hex2str(puk, puk_length, puk_str + 4);
-
-    cJSON_AddStringToObject(did_root, "puk", puk_str);
-
-    uint8_t hash[32];
-    size_t  hash_size = 0;
-    psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
-    
-    psa_hash_setup(&operation, PSA_ALG_SHA_256);
-    psa_hash_update(&operation, did, strlen(did));
-    psa_hash_update(&operation, puk_str, strlen(puk_str));
-    psa_hash_finish(&operation, hash, sizeof(hash), &hash_size);
-    
-    size_t  signature_length;
-    status = psa_sign_hash(keyid, PSA_ALG_ECDSA(PSA_ALG_SHA_256), hash, hash_size, signature, sizeof(signature), &signature_length);
-    if (PSA_SUCCESS != status)
-        goto exit;
-
-    hex2str(signature, signature_length, signature_str);        
-
-    cJSON_AddStringToObject(did_root, "signature", signature_str);
-
-    did_serialize = cJSON_Print(did_root);
-
-exit:
-    cJSON_Delete(did_root);
-
-    return did_serialize;    
-}
-
-char * iotex_pal_device_register_diddoc_upload_prepare(char *diddoc, uint32_t keyid)
-{
-    char *diddoc_serialize = NULL;
-
-    uint8_t signature[64];
-    char signature_str[64 * 2 + 1] = {0};
-
-    if (NULL == diddoc)
-        return NULL;
-
-    if (0 == keyid)
-        keyid = 1;
-
-    cJSON *diddoc_root = cJSON_CreateObject();
-    if (NULL == diddoc_root)
-        return NULL;
-
-    cJSON *diddoc_item = cJSON_Parse(diddoc);
-    if (NULL == diddoc_item)
-        goto exit;
-
-    cJSON_AddItemToObject(diddoc_root, "diddoc", diddoc_item);
-
-    size_t signature_length = 0;
-    psa_status_t status =  psa_sign_message(keyid, PSA_ALG_ECDSA(PSA_ALG_SHA_256), diddoc, strlen(diddoc), signature, 64, &signature_length);
-    if (status != PSA_SUCCESS)
-        goto exit;
-
-    hex2str(signature, signature_length, signature_str);
-
-    cJSON_AddStringToObject(diddoc_root, "signature", signature_str);
-
-    diddoc_serialize = cJSON_Print(diddoc_root);
-exit:
-    cJSON_Delete(diddoc_root);
-
-    return diddoc_serialize;
-}
-
-char * iotex_pal_device_register_signature_response_prepare(char *buf, uint32_t keyid)
-{
-    char *sign_serialize = NULL;
-    char signature_str[64 * 2 + 2 + 1] = {0};
-    uint8_t hexbin[128] = {0};
-
-    if (NULL == buf)
-        return NULL;
-
-    if (0 == keyid)
-        keyid = 1;
-    
-    cJSON *hex_root = cJSON_Parse(buf);
-    if (NULL == hex_root)
-        return NULL;
-    
-    cJSON *hex_item = cJSON_GetObjectItem(hex_root, "hex");
-    if (NULL == hex_item || !cJSON_IsString(hex_item))
-        goto exit;
-
-    char *hex_str = hex_item->valuestring;
-    if(hex_str[0] != '0' || hex_str[1] != 'x')
-        goto exit;
-
-    int hexbin_len = hexStr2Bin(hex_str + 2, hexbin);
-    
-    uint8_t signature[64];
-    size_t  signature_length;
-    psa_status_t status = psa_sign_hash(keyid, PSA_ALG_ECDSA(PSA_ALG_SHA_256), hexbin, hexbin_len, signature, sizeof(signature), &signature_length);
-    if (PSA_SUCCESS != status)
-        goto exit;
-
-    signature_str[0] = '0';
-    signature_str[1] = 'x';
-
-    hex2str(signature, signature_length, signature_str + 2);        
-    
-    cJSON *sign = cJSON_CreateObject();
-    if (NULL == sign)
-        goto exit;
-
-    cJSON_AddStringToObject(sign, "sign", signature_str);
-
-    sign_serialize = cJSON_Print(sign);
-
-    cJSON_Delete(sign);
-
-exit:
-    cJSON_Delete(hex_root); 
-
-    return sign_serialize;
-}
 
 #if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_HTTPS)
 static esp_err_t did_get_handler(httpd_req_t *req)
@@ -318,7 +127,7 @@ static esp_err_t sign_post_handler(httpd_req_t *req)
         // ESP_LOGI(TAG, "====================================");
     }
 
-    char *sign = iotex_pal_device_register_signature_response_prepare(buf, 1);
+    char *sign = iotex_utils_device_register_signature_response_prepare(buf, 1);
     if (sign)
         printf("%s\n", sign);
     else
@@ -464,17 +273,17 @@ static void _sprout_device_register_serial_task(void *p_arg)
 
         int len = uart_read_bytes(UART_NUM_0, buffer, 128, 20 / portTICK_PERIOD_MS);   
         
-        if (len == 6)
-            uart_write_bytes(UART_NUM_0, (const char *) upload_did, strlen(upload_did));    
-        else if (len == 9)
+        if (0 == strncmp(buffer, "getdiddoc", strlen("getdiddoc"))) {
             uart_write_bytes(UART_NUM_0, (const char *) upload_diddoc, strlen(upload_diddoc));
-        else if (buffer[0] == 'S') {
-            char *sign = iotex_pal_device_register_signature_response_prepare(buffer + 1, 1);
+        } else if (0 == strncmp(buffer, "getdid", strlen("getdid"))) {
+            uart_write_bytes(UART_NUM_0, (const char *) upload_did, strlen(upload_did));    
+        } else if (buffer[0] == 'S') {
+            char *sign = iotex_utils_device_register_signature_response_prepare(buffer + 1, 1);
             if (sign)
                 uart_write_bytes(UART_NUM_0, (const char *) sign, strlen(sign));
             else
                 uart_write_bytes(UART_NUM_0, (const char *) "Signature Err", strlen("Signature Err"));
-        } 
+        }
 
         if (buffer[0])
             memset(buffer, 0, 128);        
@@ -485,13 +294,52 @@ static void _sprout_device_register_serial_task(void *p_arg)
 }
 #endif
 
-static void _pal_sprout_upload_init(void)
+static void _pal_device_register_init_0(void)
 {
-    if (upload_did)
+    if (upload_did) 
         free(upload_did);
 
     if (upload_diddoc)
         free(upload_diddoc);
+
+    upload_did      = NULL;
+    upload_diddoc   = NULL;
+
+    if (device_register_key_id) {
+        psa_destroy_key(device_register_key_id);
+	    device_register_key_id = 0;        
+    }
+
+    memset(signature, 0, sizeof(signature)); 
+    memset(signature_str, 0, sizeof(signature_str));
+}
+
+static int _pal_device_register_init(char *did)
+{
+    if (NULL == did)
+        return -1;
+
+    _pal_device_register_init_0();
+
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    psa_set_key_usage_flags(&attributes, PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH | PSA_KEY_USAGE_EXPORT);
+    psa_set_key_algorithm(&attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
+    psa_set_key_type(&attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
+    psa_set_key_lifetime(&attributes, PSA_KEY_PERSISTENCE_VOLATILE);
+    psa_set_key_bits(&attributes, 256);
+
+    psa_status_t status = psa_import_key( &attributes, secret, sizeof(secret), &device_register_key_id );
+    if (PSA_SUCCESS != status)
+        return -2;
+
+	static size_t  signature_length = 0;
+    status = psa_sign_message(device_register_key_id, PSA_ALG_ECDSA(PSA_ALG_SHA_256), did, strlen(did), signature, sizeof(signature), &signature_length);
+	if (PSA_SUCCESS != status)
+		return -3;
+
+	iotex_utils_convert_hex_to_str(signature , signature_length, signature_str);
+
+    return 0;
 }
 
 void iotex_pal_sprout_device_register_start(char *did, char *diddoc)
@@ -499,10 +347,18 @@ void iotex_pal_sprout_device_register_start(char *did, char *diddoc)
     if (NULL == did || NULL == diddoc)
         return;
 
-    _pal_sprout_upload_init();
+    int ret = _pal_device_register_init(did);
+    if (ret) {
+        printf("Failed to _pal_device_register_init() ret %d\n", ret);
+    }
 
-    upload_did    = iotex_pal_device_register_did_upload_prepare(did, 1);
-    upload_diddoc = iotex_pal_device_register_diddoc_upload_prepare(diddoc, 1);
+    upload_did    = iotex_utils_device_register_did_upload_prepare(did, 1, signature_str, true);
+    if (upload_did)
+        printf("Upload DID : %s\n", upload_did);
+
+    upload_diddoc = iotex_utils_device_register_diddoc_upload_prepare(diddoc, 1, signature_str, true);
+    if (upload_diddoc)
+        printf("Upload DIDDoc : %s\n", upload_diddoc);     
 
 #if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_SERIAL)
         xTaskCreate(_sprout_device_register_serial_task, "device_register_task", 1024 * 5, NULL, 10, &pxCreatedTask);
@@ -514,7 +370,7 @@ void iotex_pal_sprout_device_register_start(char *did, char *diddoc)
 
 void iotex_pal_sprout_device_register_stop(void)
 {
-    _pal_sprout_upload_init();
+    _pal_device_register_init_0();
     
     if (NULL == pxCreatedTask)
         goto mode_https;
