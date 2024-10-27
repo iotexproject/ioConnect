@@ -251,6 +251,7 @@ static void _pal_sprout_webserver_secure_start(void)
 #if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_SERIAL)
 static void _sprout_device_register_serial_task(void *p_arg)
 {
+    char *sign = NULL;
     char buffer[128] = {0};
 
     uart_config_t uart_config = {
@@ -277,8 +278,8 @@ static void _sprout_device_register_serial_task(void *p_arg)
             uart_write_bytes(UART_NUM_0, (const char *) upload_diddoc, strlen(upload_diddoc));
         } else if (0 == strncmp(buffer, "getdid", strlen("getdid"))) {
             uart_write_bytes(UART_NUM_0, (const char *) upload_did, strlen(upload_did));    
-        } else if (buffer[0] == 'S') {
-            char *sign = iotex_utils_device_register_signature_response_prepare(buffer + 1, 1);
+        } else {
+            sign = iotex_utils_device_register_signature_response_prepare(buffer, 1);
             if (sign)
                 uart_write_bytes(UART_NUM_0, (const char *) sign, strlen(sign));
             else
@@ -288,6 +289,12 @@ static void _sprout_device_register_serial_task(void *p_arg)
         if (buffer[0])
             memset(buffer, 0, 128);        
 
+        if (sign) {
+            free (sign);
+            sign = NULL;
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(200));
     }
 
     vTaskDelete(NULL);
