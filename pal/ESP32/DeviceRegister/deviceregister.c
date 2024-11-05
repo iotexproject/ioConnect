@@ -272,31 +272,37 @@ static void _sprout_device_register_serial_task(void *p_arg)
 
     while(1) {
 
-        int len = uart_read_bytes(UART_NUM_0, buffer, 128, 20 / portTICK_PERIOD_MS);   
-        
-        if (0 == strncmp(buffer, "getdiddoc", strlen("getdiddoc"))) {
+        int len = uart_read_bytes(UART_NUM_0, buffer, 128, 20 / portTICK_PERIOD_MS);
+        if (0 == len)
+            continue;           
+
+        if (0 == strncmp("getdiddoc", buffer, 9)) {
             uart_write_bytes(UART_NUM_0, (const char *) upload_diddoc, strlen(upload_diddoc));
-        } else if (0 == strncmp(buffer, "getdid", strlen("getdid"))) {
-            uart_write_bytes(UART_NUM_0, (const char *) upload_did, strlen(upload_did));    
+        } else if (0 == strncmp("getdid", buffer, 6)) {
+            uart_write_bytes(UART_NUM_0, (const char *) upload_did, strlen(upload_did)); 
+        } else if (0 == strcmp("quit", buffer)) {
+            goto exit;
         } else {
-            sign = iotex_utils_device_register_signature_response_prepare(buffer, 1);
-            if (sign)
+            char *sign = iotex_utils_device_register_signature_response_prepare(buffer, 1);
+            if (sign) {
                 uart_write_bytes(UART_NUM_0, (const char *) sign, strlen(sign));
-            else
-                uart_write_bytes(UART_NUM_0, (const char *) "Signature Err", strlen("Signature Err"));
+            } else {
+                uart_write_bytes(UART_NUM_0, (const char *) "{\n\t\"Sign\":\t\"Failed to Signature\"\n}", strlen("{\n\t\"Sign\":\t\"Failed to Signature\"\n}"));    
+            }
+
+            if (sign) {
+                free(sign);
+                sign = NULL;
+            }
         }
 
         if (buffer[0])
-            memset(buffer, 0, 128);        
-
-        if (sign) {
-            free (sign);
-            sign = NULL;
-        }
+            memset(buffer, 0, 128);          
 
         vTaskDelay(pdMS_TO_TICKS(200));
     }
 
+exit:
     vTaskDelete(NULL);
 }
 #endif
@@ -327,24 +333,6 @@ static int _pal_device_register_init(char *did)
         return -1;
 
     _pal_device_register_init_0();
-
-    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
-    psa_set_key_usage_flags(&attributes, PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH | PSA_KEY_USAGE_EXPORT);
-    psa_set_key_algorithm(&attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
-    psa_set_key_type(&attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
-    psa_set_key_lifetime(&attributes, PSA_KEY_PERSISTENCE_VOLATILE);
-    psa_set_key_bits(&attributes, 256);
-
-    psa_status_t status = psa_import_key( &attributes, secret, sizeof(secret), &device_register_key_id );
-    if (PSA_SUCCESS != status)
-        return -2;
-
-	static size_t  signature_length = 0;
-    status = psa_sign_message(device_register_key_id, PSA_ALG_ECDSA(PSA_ALG_SHA_256), did, strlen(did), signature, sizeof(signature), &signature_length);
-	if (PSA_SUCCESS != status)
-		return -3;
-
-	iotex_utils_convert_hex_to_str(signature , signature_length, signature_str);
 
     return 0;
 }

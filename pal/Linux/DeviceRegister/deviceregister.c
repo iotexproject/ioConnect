@@ -217,7 +217,7 @@ static int _pal_device_register_init(char *did)
     psa_set_key_usage_flags(&attributes, PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH | PSA_KEY_USAGE_EXPORT);
     psa_set_key_algorithm(&attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
     psa_set_key_type(&attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
-    psa_set_key_lifetime(&attributes, PSA_KEY_PERSISTENCE_VOLATILE);
+    psa_set_key_lifetime(&attributes, PSA_KEY_LIFETIME_VOLATILE);
     psa_set_key_bits(&attributes, 256);
 
     psa_status_t status = psa_import_key( &attributes, secret, sizeof(secret), &device_register_key_id );
