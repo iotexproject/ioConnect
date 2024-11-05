@@ -6,6 +6,8 @@
 #include "esp_console.h"
 #include "esp_log.h"
 
+#include "deviceregister.h"
+
 #if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_HTTPS)
 #include "esp_https_server.h"
 #endif
