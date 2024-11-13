@@ -510,7 +510,7 @@ cleanup:
 
     return( iotex_to_psa_error( ret ) );
 #else
-    return iotex_ecdsa_verify( PSA_KEY_TYPE_ECC_GET_FAMILY(attributes->core.type), 
+    return iotex_ecdsa_verify( attributes->core.type, 
                             key_buffer, key_buffer_size,
                             hash, hash_length, (uint8_t *)signature, signature_length);
 #endif    

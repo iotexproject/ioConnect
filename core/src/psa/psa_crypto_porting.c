@@ -2570,7 +2570,10 @@ int iotex_ecdsa_verify( psa_key_type_t type,
     uint8_t public_key[2 * NUM_ECC_BYTES] = {0};
     int ret;
 
-    switch( type )
+    if ( (key_buffer_size != 64) && (key_buffer_size != 65))
+        return PSA_ERROR_INVALID_ARGUMENT;
+
+    switch( PSA_KEY_TYPE_ECC_GET_FAMILY(type) )
     {
         case PSA_ECC_FAMILY_SECP_R1:
 
@@ -2586,11 +2589,17 @@ int iotex_ecdsa_verify( psa_key_type_t type,
             return PSA_ERROR_GENERIC_ERROR;
     }     
 
-    uECC_compute_public_key(key_buffer, public_key, curve);
+    int offset = key_buffer_size == 64 ? 0 : 1;
+
+    if (PSA_KEY_TYPE_IS_ECC_PUBLIC_KEY(type)) {
+        memcpy(public_key, key_buffer + offset, 64);
+    } else {
+        uECC_compute_public_key(key_buffer, public_key, curve);
+    }
 
     ret = uECC_verify(public_key, hash, hash_length, signature, curve);
     if ( 0 == ret )
-        return PSA_ERROR_GENERIC_ERROR;
+        return PSA_ERROR_INVALID_SIGNATURE;
 
     return PSA_SUCCESS;
 }
