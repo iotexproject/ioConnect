@@ -52,7 +52,9 @@ static char    signature_str[64 * 2 + 1] = {0};
 static TaskHandle_t pxCreatedTask;
 static esp_log_level_t log_level = 0;
 
+#if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_HTTPS)
 static httpd_handle_t server = NULL;
+#endif
 
 #if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_HTTPS)
 static esp_err_t did_get_handler(httpd_req_t *req)
@@ -349,18 +351,18 @@ void iotex_pal_sprout_device_register_start(char *did, char *diddoc)
         printf("Failed to _pal_device_register_init() ret %d\n", ret);
     }
 
-    upload_did    = iotex_utils_device_register_did_upload_prepare(did, 1, signature_str, true);
+    upload_did    = iotex_utils_device_register_did_upload_prepare(did, 1, NULL, true);
     if (upload_did)
         printf("Upload DID : %s\n", upload_did);
 
-    upload_diddoc = iotex_utils_device_register_diddoc_upload_prepare(diddoc, 1, signature_str, true);
+    upload_diddoc = iotex_utils_device_register_diddoc_upload_prepare(diddoc, 1, NULL, true);
     if (upload_diddoc)
         printf("Upload DIDDoc : %s\n", upload_diddoc);     
 
 #if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_SERIAL)
-        xTaskCreate(_sprout_device_register_serial_task, "device_register_task", 1024 * 5, NULL, 10, &pxCreatedTask);
-#elif (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_HTTPS)
-        _pal_sprout_webserver_secure_start();
+    xTaskCreate(_sprout_device_register_serial_task, "device_register_task", 1024 * 5, NULL, 10, &pxCreatedTask);
+#elif (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_HTTPS)   
+    _pal_sprout_webserver_secure_start();
 #endif        
 
 }
@@ -379,9 +381,12 @@ void iotex_pal_sprout_device_register_stop(void)
     pxCreatedTask = NULL;
 
 mode_https:
-
+#if (IOTEX_PAL_DEVICE_REGISTER_MODE == IOTEX_PAL_DEVICE_REGISTER_MODE_HTTPS)
     if (server)
         httpd_ssl_stop(server);
+#endif
+
+    return;        
 }
 
 
