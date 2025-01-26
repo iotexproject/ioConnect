@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-void InitLowsCalc(void);
-void LowsCalc(char *s, char *out);
+void iotex_utils_secp256k1_eth_lower_s_init(void);
+void iotex_utils_secp256k1_eth_lower_s_calc(char *s, char *out);
 
 #ifdef __cplusplus
 }

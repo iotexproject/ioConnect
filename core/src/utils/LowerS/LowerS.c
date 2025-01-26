@@ -12,7 +12,7 @@ struct BigNum Lower_S;
 struct BigNum Max_s ;
 
 //a > b return 1, a == b return 0; a < b return -1;
-int Comp(struct BigNum *a, struct BigNum *b) {
+static int Comp(struct BigNum *a, struct BigNum *b) {
     int i;
     if (a->len != b->len)
         return (a->len > b->len) ? 1 : -1;
@@ -25,7 +25,7 @@ int Comp(struct BigNum *a, struct BigNum *b) {
     return 0;
 }
 
-struct BigNum Sub(struct BigNum *a, struct BigNum *b) {
+static struct BigNum Sub(struct BigNum *a, struct BigNum *b) {
     struct BigNum c;
     int i, len;
     len = (a->len > b->len) ? a->len : b->len;
@@ -67,7 +67,7 @@ static char str2Hex(char c)
     return c;
 }
 
-int hexStr2Bin(char *str, char *bin) {
+static int hexStr2Bin(char *str, char *bin) {
     int i,j;
     for(i = 0,j = 0; j < (strlen(str)>>1) ; i++,j++)
     {
@@ -78,7 +78,7 @@ int hexStr2Bin(char *str, char *bin) {
     return j; 
 }
 
-void printBuf(struct BigNum *a, char *buf) {
+static void printBuf(struct BigNum *a, char *buf) {
     int i, j;
 //    LOG_INF("a->len: %d\n", a->len);
     if (a->len < 64) a->len = 64;
@@ -89,7 +89,7 @@ void printBuf(struct BigNum *a, char *buf) {
     }
 }
 
-void Init(struct BigNum *a, char *s, int *tag) { 
+static void Init(struct BigNum *a, char *s, int *tag) { 
     memset(a->num, 0, sizeof(a->num));
     int i = 0, j = strlen(s);
     if (s[0] == '-') {
@@ -104,7 +104,7 @@ void Init(struct BigNum *a, char *s, int *tag) {
     }
 }
 
-void InitBinary(struct BigNum *a, char *binary, int  len) {
+static void InitBinary(struct BigNum *a, char *binary, int  len) {
     memset(a->num, 0, sizeof(a->num));
     int i = 0, j = (len<<1);
     a->len = j;
@@ -116,7 +116,7 @@ void InitBinary(struct BigNum *a, char *binary, int  len) {
     }
 }
 
-void InitLowsCalc(void) {
+static void InitLowsCalc(void) {
     int tag = 1;
     Init(&Lower_S, "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0", &tag);
     Init(&Max_s, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", &tag);    
@@ -125,7 +125,7 @@ void InitLowsCalc(void) {
 /*
     s : signature s in binary, out : low-s value in binary
 */
-void LowsCalc(char *s, char *out) {   
+static void LowsCalc(char *s, char *out) {   
     struct BigNum a;
 
     InitBinary(&a, s, 32);
@@ -133,4 +133,14 @@ void LowsCalc(char *s, char *out) {
         a = Sub((struct BigNum *)&Max_s , &a);
         printBuf(&a, out);
     }
+}
+
+void iotex_utils_secp256k1_eth_low_s_init(void)
+{
+    InitLowsCalc();
+}
+
+void iotex_utils_secp256k1_eth_low_s_calc(char *s, char *out)
+{
+    LowsCalc(s, out);
 }
