@@ -448,7 +448,7 @@ int iotex_dev_access_dev_register_confirm(int8_t mac[6]) {
     raw_data[upload.payload.pConfirm.owner.size + 3] = (char)(timestamp & 0x000000FF);	
 
 	psa_sign_message( g_sdkcore_key, PSA_ALG_ECDSA(PSA_ALG_SHA_256), (const uint8_t *)(raw_data), upload.payload.pConfirm.owner.size + 4, (uint8_t *)sign_buf, 64, (size_t *)&sign_len);
-	LowsCalc(sign_buf + 32, sign_buf + 32);
+//	LowsCalc(sign_buf + 32, sign_buf + 32);
 	
 	upload.payload.pConfirm.timestamp = timestamp;
 
